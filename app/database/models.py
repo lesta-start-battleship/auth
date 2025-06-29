@@ -17,13 +17,13 @@ class Base(DeclarativeBase):
 
 
 class UserCurrency(Base):
-    __tablename__ = "balance"
+    __tablename__ = "currency"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     silver: Mapped[int] = mapped_column(default=0)
     gold: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[str] = mapped_column(default=datetime.now)
-
+    user: Mapped["UserBase"] = relationship("UserBase", back_populates="currency")
 
 class UserBase(Base):
     __tablename__ = "users"
@@ -35,5 +35,5 @@ class UserBase(Base):
     h_password: Mapped[str] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(nullable=False)
     role: Mapped[Role] = mapped_column(SQLEnum(Role, name="role_enum"))
-    currencies: Mapped[UserCurrency] = relationship("Currency", back_populates="user", cascade="all, delete-orphan")
+    currencies: Mapped[UserCurrency] = relationship("UserCurrency", back_populates="users", cascade="all, delete-orphan")
     created_at: Mapped[str] = mapped_column(default=datetime.now)
