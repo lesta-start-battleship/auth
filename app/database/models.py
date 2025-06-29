@@ -17,7 +17,7 @@ class Base(DeclarativeBase):
 
 
 class UserCurrency(Base):
-    __tablename__ = "currency"
+    __tablename__ = "user_currencies"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     silver: Mapped[int] = mapped_column(default=0)
