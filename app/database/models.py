@@ -20,11 +20,11 @@ class UserBase(Base):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(20), nullable=False)
-    surname: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str] = mapped_column(String(20), nullable=True)
+    surname: Mapped[str] = mapped_column(String(20), nullable=True)
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     h_password: Mapped[str] = mapped_column(String(50), nullable=True)
-    is_active: Mapped[bool] = mapped_column(nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=False, nullable=False)
     role: Mapped[Role] = mapped_column(SQLEnum(Role, name="role_enum"))
     created_at: Mapped[str] = mapped_column(default=datetime.now)
 
