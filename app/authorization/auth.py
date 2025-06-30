@@ -151,7 +151,7 @@ class LoginView(BaseResource):
     @auth_ns.expect(user_login_request)
     @auth_ns.doc(
         responses={
-            200: user_login_response,
+            200: ("Login was successful", user_login_response),
             400: ("Invalid password", error_response),
             404: ("User not found", error_response),
             500: ("Internal server error", error_response)
@@ -219,7 +219,6 @@ class RefreshView(BaseResource):
         description="Login a user",
         security=[{"JWT": []}]
     )
-
     @jwt_required(refresh=True)
     async def post(self) -> Dict[str, str] | HttpError:
         """
