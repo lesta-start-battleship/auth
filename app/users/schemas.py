@@ -8,18 +8,20 @@ error_response = user_ns.model(
     }
 )
 
+currency_model = user_ns.model(
+    "Currency", {
+        "gold": fields.Integer,
+        "silver": fields.Integer
+    }
+)
+
 get_user_response = user_ns.model(
     "GetUserResponse", {
         "id": fields.Integer,
         "email": fields.String,
         "username": fields.String,
         "role": fields.String,
-        "currency": fields.Nested(
-            {
-                "gold": fields.Integer,
-                "silver": fields.Integer
-            }
-        )
+        "currency": fields.Nested(currency_model)
     }
 )
 
