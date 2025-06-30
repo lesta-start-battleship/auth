@@ -1,15 +1,16 @@
 from app.authorization.namespace import auth_ns
-from app.extensions import jwt_redis_blocklist
+from app.extensions import jwt_redis_blocklist, oauth
 from app.users.namespace import user_ns
 from flask import Flask
 from flask_restx import Api
-from app.config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger
+from app.config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger, FLASK_SECRET_KEY
 from flask_jwt_extended import get_jwt, get_jwt_identity, create_access_token, set_access_cookies
 from datetime import datetime, timezone, timedelta
 from flask import Response, jsonify
 from app.errors import HttpError
 from flask_jwt_extended import JWTManager
 from app.authorization import auth
+from app.authorization.google import api_routes
 from app.users import users
 
 
@@ -17,7 +18,10 @@ app = Flask(__name__)
 api = Api(app, doc="/api/v1/docs/")
 jwt = JWTManager(app)
 
-app.config["JWT_SECRET_KEY"] = "secret"
+oauth.init_app(app)
+
+app.config["SECRET_KEY"] = FLASK_SECRET_KEY
+
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = JWT_ACCESS_TOKEN_EXPIRES
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
 app.config["JWT_COOKIE_SECURE"] = True
