@@ -1,5 +1,5 @@
 from flask import request
-from app.database.models import UserBase
+from database.models import UserBase
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
 

@@ -1,15 +1,15 @@
 from flask import make_response, request
 from flask_restx import Resource
 from typing import Dict
-from app.authorization.namespace import auth_ns
+from authorization.namespace import auth_ns
 
-from app.config import logger
-from app.authorization.services import get_user_by_username, create_user
-from app.errors import HttpError
+from config import logger
+from authorization.services import get_user_by_username, create_user
+from errors import HttpError
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.database.models import UserBase
+from database.models import UserBase
 
 from werkzeug.security import check_password_hash
 
@@ -19,7 +19,7 @@ from flask_jwt_extended import (
     jwt_required
 )
 
-from app.authorization.schemas import (
+from authorization.schemas import (
     user_reg_request,
     user_reg_response,
     error_response,

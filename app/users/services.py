@@ -1,7 +1,7 @@
 from flask import request
-from app.database.models import UserBase
+from database.models import UserBase
 from sqlalchemy.exc import SQLAlchemyError
-from app.config import logger
+from config import logger
 from typing import List, Optional
 
 

@@ -1,5 +1,5 @@
 from flask_restx import fields
-from app.users.namespace import user_ns
+from users.namespace import user_ns
 
 
 error_response = user_ns.model(

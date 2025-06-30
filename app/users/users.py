@@ -1,18 +1,18 @@
 from flask_restx import Resource
 from typing import Dict, List
-from app.errors import HttpError
-from app.extensions import jwt_redis_blocklist
+from errors import HttpError
+from extensions import jwt_redis_blocklist
 from flask_jwt_extended import (
     get_jwt_identity, get_jwt, jwt_required,
     unset_access_cookies, unset_refresh_cookies
 )
 from flask import make_response, request
 from sqlalchemy.exc import SQLAlchemyError
-from app.config import logger, JWT_ACCESS_BLOCKLIST
-from app.database.models import UserBase
+from config import logger, JWT_ACCESS_BLOCKLIST
+from database.models import UserBase
 
-from app.users.namespace import user_ns
-from app.users.schemas import (
+from users.namespace import user_ns
+from users.schemas import (
     error_response,
     get_user_response,
     get_users_list_request,
@@ -20,7 +20,7 @@ from app.users.schemas import (
     update_user_request,
     update_user_response
 )
-from app.users.services import get_user_by_id, get_users, update_user, delete_user
+from users.services import get_user_by_id, get_users, update_user, delete_user
 
 
 class BaseResource(Resource):

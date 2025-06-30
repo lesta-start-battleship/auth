@@ -1,17 +1,17 @@
-from app.authorization.namespace import auth_ns
-from app.extensions import jwt_redis_blocklist, oauth
-from app.users.namespace import user_ns
+from authorization.namespace import auth_ns
+from extensions import jwt_redis_blocklist, oauth
+from users.namespace import user_ns
 from flask import Flask
 from flask_restx import Api
-from app.config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger, FLASK_SECRET_KEY
+from config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger, FLASK_SECRET_KEY
 from flask_jwt_extended import get_jwt, get_jwt_identity, create_access_token, set_access_cookies
 from datetime import datetime, timezone, timedelta
 from flask import Response, jsonify
-from app.errors import HttpError
+from errors import HttpError
 from flask_jwt_extended import JWTManager
-from app.authorization import auth
-from app.authorization.google import api_routes
-from app.users import users
+from authorization import auth
+# from authorization.google import api_routes
+from users import users
 
 
 app = Flask(__name__)

@@ -1,6 +1,6 @@
 from flask_restx import fields
 
-from app.authorization.namespace import auth_ns
+from authorization.namespace import auth_ns
 
 
 error_response = auth_ns.model("Error", {

@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from datetime import timedelta
 
-from app.main import oauth
+from extensions import oauth
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
