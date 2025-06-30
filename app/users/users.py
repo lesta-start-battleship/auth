@@ -1,7 +1,7 @@
 from flask_restx import Resource
 from typing import Dict, List
 from app.errors import HttpError
-from app.main import jwt_redis_blocklist
+from app.extensions import jwt_redis_blocklist
 from flask_jwt_extended import (
     get_jwt_identity, get_jwt, jwt_required,
     unset_access_cookies, unset_refresh_cookies
@@ -71,7 +71,7 @@ class UserResource(BaseResource):
     """
     @user_ns.doc(
         responses={
-            200: get_user_response,
+            200: ("User was found", get_user_response),
             401: ("Unauthorized", error_response),
             404: ("User not found", error_response),
             500: ("Internal server error", error_response)
@@ -101,7 +101,7 @@ class UserResource(BaseResource):
     @user_ns.expect(update_user_request)
     @user_ns.doc(
         responses={
-            200: update_user_response,
+            200: ("User data was updated", update_user_response),
             400: ("No user data provided", error_response),
             401: ("Unauthorized", error_response),
             404: ("User not found", error_response),
@@ -137,7 +137,7 @@ class UserResource(BaseResource):
 
     @user_ns.doc(
         responses={
-            204: ("User deleted successfully"),
+            204: "User deleted successfully",
             401: ("Unauthorized", error_response),
             404: ("User not found", error_response),
             500: ("Internal server error", error_response)
@@ -173,7 +173,7 @@ class GetUsersListResource(BaseResource):
     @user_ns.expect(get_users_list_request)
     @user_ns.doc(
         responses={
-            200: get_users_list_response,
+            200: ("List of users was fetched", get_users_list_response),
             401: ("Unauthorized", error_response),
             400: ("No user IDs provided", error_response),
             404: ("Users not found", error_response),
@@ -207,7 +207,7 @@ class GetUsersListResource(BaseResource):
 class LogoutUserResource(BaseResource):
     @user_ns.doc(
         responses={
-            200: ("Access token revoked"),
+            200: "Access token revoked",
             401: ("Unauthorized", error_response),
             500: ("Internal server error", error_response)
         },
