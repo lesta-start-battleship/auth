@@ -16,15 +16,6 @@ class Base(DeclarativeBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
 
-class UserCurrency(Base):
-    __tablename__ = "user_currencies"
-
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    silver: Mapped[int] = mapped_column(default=0)
-    gold: Mapped[int] = mapped_column(default=0)
-    created_at: Mapped[str] = mapped_column(default=datetime.now)
-    user: Mapped["UserBase"] = relationship("UserBase", back_populates="currencies")
-
 class UserBase(Base):
     __tablename__ = "users"
 
@@ -35,5 +26,21 @@ class UserBase(Base):
     h_password: Mapped[str] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(nullable=False)
     role: Mapped[Role] = mapped_column(SQLEnum(Role, name="role_enum"))
-    currencies: Mapped[UserCurrency] = relationship("UserCurrency", back_populates="user", cascade="all, delete-orphan")
     created_at: Mapped[str] = mapped_column(default=datetime.now)
+
+    currencies: Mapped["UserCurrency"] = relationship(
+        "UserCurrency", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class UserCurrency(Base):
+    __tablename__ = "user_currencies"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    silver: Mapped[int] = mapped_column(default=0)
+    gold: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[str] = mapped_column(default=datetime.now)
+
+    user: Mapped["UserBase"] = relationship(
+        "UserBase", back_populates="currencies"
+    )
