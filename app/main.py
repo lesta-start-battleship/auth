@@ -1,14 +1,16 @@
-import redis
-from authorization.namespace import auth_ns
-from users.namespace import user_ns
+from app.authorization.namespace import auth_ns
+from app.extensions import jwt_redis_blocklist
+from app.users.namespace import user_ns
 from flask import Flask
 from flask_restx import Api
-from config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger
+from app.config import JWT_ACCESS_TOKEN_EXPIRES, JWT_REFRESH_TOKEN_EXPIRES, logger
 from flask_jwt_extended import get_jwt, get_jwt_identity, create_access_token, set_access_cookies
 from datetime import datetime, timezone, timedelta
 from flask import Response, jsonify
-from errors import HttpError
+from app.errors import HttpError
 from flask_jwt_extended import JWTManager
+from app.authorization import auth
+from app.users import users
 
 
 app = Flask(__name__)
@@ -25,10 +27,6 @@ app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 api.add_namespace(auth_ns, path="/api/v1/auth")
 api.add_namespace(user_ns, path="/api/v1/users")
 
-jwt_redis_blocklist = redis.StrictRedis(
-    host="localhost", port=6379, db=0, decode_responses=True
-)
-
 
 @jwt.token_in_blocklist_loader
 def check_if_token_in_blocklist(jwt_header: dict, jwt_payload: dict):
@@ -41,14 +39,14 @@ def check_if_token_in_blocklist(jwt_header: dict, jwt_payload: dict):
 
 
 @app.errorhandler(HttpError)
-def error_headler(err: HttpError):
+def error_handler(err: HttpError):
     """
     Обработчик ошибок
     """
-    http_responce = jsonify({"error": err.message})
-    http_responce.status_code = err.status_code
+    http_response = jsonify({"error": err.message})
+    http_response.status_code = err.status_code
     logger.error(f"Ошибка {err.status_code}: {err.message}")
-    return http_responce
+    return http_response
 
 
 @app.after_request
