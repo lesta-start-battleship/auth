@@ -10,7 +10,7 @@ from flask import Response, jsonify
 from errors import HttpError
 from flask_jwt_extended import JWTManager
 from authorization import auth
-# from authorization.google import api_routes
+from authorization.google import api_routes
 from users import users
 
 
