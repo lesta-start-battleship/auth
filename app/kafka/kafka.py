@@ -1,10 +1,11 @@
 import json
 
 from confluent_kafka import Consumer, Producer
+from sqlalchemy.orm import Session
+
 from database.models import (
     UserCurrency, UserTransaction, CurrencyType, TransactionStatus
 )
-from sqlalchemy.orm import Session
 
 producer = Producer({'bootstrap.servers': 'localhost:9092'})
 
