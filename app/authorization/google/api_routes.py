@@ -10,7 +10,6 @@ from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 
 
 class GoogleLogin(MethodView):
-
     def get(self):
         redirect_uri = url_for("Auth.google_authorize", _external=True)
         return google.authorize_redirect(redirect_uri)
