@@ -1,7 +1,7 @@
 import json
 
 from confluent_kafka import Consumer, Producer
-from models import (
+from database.models import (
     UserCurrency, UserTransaction, CurrencyType, TransactionStatus
 )
 from sqlalchemy.orm import Session
