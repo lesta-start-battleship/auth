@@ -6,11 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
-## [UNRELEASED]
+## [0.4.1] - (2025-07-02)
 
 ### Feat
 
-- feat(app): Authorization using Yandex
+- feat(app): Add redirect to cli after successful google and Yandex auth
+
+### Fix
+
+- fix(app): Fix imports of models
+- fix(app): Fix port number in main
+- fix(app): Remove token check in cookies and unnecessary add-on when generating specification
 
 ## [0.3.0] - (2025-07-02)
 

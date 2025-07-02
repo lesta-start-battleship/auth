@@ -36,31 +36,11 @@ from config import (
 app = Flask(__name__)
 
 app.config["SECRET_KEY"] = FLASK_SECRET_KEY
-app.config["SWAGGER"] = {
-    "openapi": "3.0.0",
-    'uiversion': 3,
-    'config': {
-        "requestInterceptor": """
-        function(request) {
-            const getCookie = (name) => {
-                let value = `; ${document.cookie}`;
-                let parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
-            };
-            const csrfToken = getCookie("csrf_token");
-            if (csrfToken) {
-                request.headers["X-CSRFToken"] = csrfToken;
-            }
-            return request
-        }
-        """
-    }
-}
+app.config["SWAGGER"] = {"openapi": "3.0.0",}
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = JWT_ACCESS_TOKEN_EXPIRES
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
 app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 app.config["JWT_COOKIE_SECURE"] = True
-app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 
 registration_user_signal.connect(user_registered_handler)
