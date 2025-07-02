@@ -22,8 +22,14 @@ POSTGRES_DB = os.getenv("POSTGRES_DB")
 VERSION = os.getenv("VERSION")
 
 JWT_ACCESS_BLOCKLIST = os.getenv("JWT_ACCESS_BLOCKLIST", timedelta(hours=1))
-JWT_ACCESS_TOKEN_EXPIRES = os.getenv("JWT_ACCESS_TOKEN_EXPIRES", timedelta(days=1))
-JWT_REFRESH_TOKEN_EXPIRES = os.getenv("JWT_REFRESH_TOKEN_EXPIRES", timedelta(days=7))
+JWT_ACCESS_TOKEN_EXPIRES = os.getenv(
+    "JWT_ACCESS_TOKEN_EXPIRES",
+    timedelta(days=1)
+)
+JWT_REFRESH_TOKEN_EXPIRES = os.getenv(
+    "JWT_REFRESH_TOKEN_EXPIRES",
+    timedelta(days=7)
+)
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -33,6 +39,6 @@ google = oauth.register(
     name="google",
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration", # noqa
     client_kwargs={"scope": "openid email profile"}
 )

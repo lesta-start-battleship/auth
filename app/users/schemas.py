@@ -1,56 +1,97 @@
-from flask_restx import fields
-from users.namespace import user_ns
+import re
+from pydantic import BaseModel, ValidationError, field_validator
+from typing import List
+from datetime import datetime
+from database.models import Role
+from config import logger
 
 
-error_response = user_ns.model(
-    "Error", {
-        "error": fields.String(description="Error message"),
-    }
-)
+def validate_schema(schema_cls: type, **kwargs):
+    try:
+        check_validate = schema_cls(**kwargs)
+        return check_validate
+    except ValidationError as e:
+        logger.error(f"Ошибка валидации данных: {e}")
+        return e.errors()
 
-currency_model = user_ns.model(
-    "Currency", {
-        "gold": fields.Integer,
-        "silver": fields.Integer
-    }
-)
 
-get_user_response = user_ns.model(
-    "GetUserResponse", {
-        "id": fields.Integer,
-        "email": fields.String,
-        "username": fields.String,
-        "role": fields.String,
-        "currency": fields.Nested(currency_model)
-    }
-)
+class Currency(BaseModel):
+    id: int
+    gold: int
+    guild_rage: int
 
-get_users_list_request = user_ns.model(
-    "GetUserListRequest", {
-        "user_ids": fields.List(fields.Integer(required=True), required=True)
-    }
-)
+    class Config:
+        from_attributes = True
 
-get_users_list_response = user_ns.model(
-    "GetUserListResponse", {
-        "users": fields.List(fields.Nested(get_user_response))
-    }
-)
 
-update_user_request = user_ns.model(
-    "UpdateUserRequest", {
-        "email": fields.String,
-        "username": fields.String,
-        "password": fields.String(write_only=True),
-        "role": fields.String
-    }
-)
+class GetUserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    name: str
+    surname: str
+    role: str
+    is_active: bool
+    created_at: datetime
+    currencies: Currency
 
-update_user_response = user_ns.model(
-    "UpdateUserResponse", {
-        "id": fields.Integer,
-        "email": fields.String,
-        "username": fields.String,
-        "role": fields.String
-    }
-)
+    class Config:
+        from_attributes = True
+
+
+class UpdateUserRequest(BaseModel):
+    email: str | None = None
+    username: str | None = None
+    password: str | None = None
+    name: str | None = None
+    surname: str | None = None
+    role: str | None = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, password):
+        if not password:
+            raise ValueError("Пароль не введен")
+        if not re.match(
+            r"(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$",
+            password
+        ):
+            raise ValueError(
+                "Неверный формат пароля, должен содержать хотя "
+                "бы одну заглавную букву, одну строчную букву и одну цифру,"
+                " длина не менее 8 символов"
+            )
+        return password
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, email):
+        if not email:
+            raise ValueError("Email не введен")
+        if not re.match(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            email
+        ):
+            raise ValueError("Неверный формат email")
+        return email
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, role):
+        if not role:
+            raise ValueError("Роль не введена")
+        if role not in Role.value:
+            raise ValueError("Неверная роль")
+        return role
+
+
+class UpdateUserResponse(GetUserResponse):
+    pass
+
+
+class GetUsersListRequest(BaseModel):
+    user_ids: List[int]
+
+
+class GetUsersListResponse(BaseModel):
+    users: List[GetUserResponse]

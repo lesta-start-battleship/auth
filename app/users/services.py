@@ -1,19 +1,23 @@
-from flask import request
+from sqlalchemy.orm import Session, joinedload
 from database.models import UserBase
 from sqlalchemy.exc import SQLAlchemyError
-from config import logger
 from typing import List, Optional
+from werkzeug.security import generate_password_hash
 
 
-async def get_user_by_id(user_id: int) -> UserBase | bool:
+def get_user_by_id(
+    session_db: Session,
+    user_id: int
+) -> UserBase | bool:
     """
     Получение пользователя по id
 
+    :param session_db: сессия базы данных
     :param user_id: id пользователя
     :return: UserBase | bool
     """
     try:
-        user = request.db_session.get(UserBase, user_id)
+        user = session_db.get(UserBase, user_id)
 
         if user is None:
             return False
@@ -21,19 +25,49 @@ async def get_user_by_id(user_id: int) -> UserBase | bool:
         return user
 
     except SQLAlchemyError as e:
-        logger.error(f"Ошибка при получении пользователя: {e}")
         raise e
 
 
-async def get_users(user_ids: List[int]) -> Optional[List[UserBase]]:
+def get_full_user_by_id(session_db: Session, user_id: int) -> UserBase | bool:
+    """
+    Получение полной информации о пользователе по id
+
+    :param session_db: сессия базы данных
+    :param user_id: id пользователя
+    :return: UserBase | bool
+    """
+    try:
+        user = (
+            session_db.query(UserBase)
+            .options(joinedload(UserBase.currencies))
+            .filter(UserBase.id == user_id)
+            .one_or_none()
+        )
+
+        return user if user else False
+
+    except SQLAlchemyError as e:
+        raise e
+
+
+def get_users(
+    session_db: Session,
+    user_ids: List[int]
+) -> Optional[List[UserBase]]:
     """
     Получение списка пользователей по id
 
+    :param session_db: сессия базы данных
     :param user_ids: список id пользователей
     :return: Optional[List[UserBase]]
     """
     try:
-        users = request.db_session.query(UserBase).filter(UserBase.id.in_(user_ids)).all()
+        users = (
+            session_db.query(UserBase)
+            .options(joinedload(UserBase.currencies))
+            .filter(UserBase.id.in_(user_ids))
+            .all()
+        )
 
         if not users:
             return None
@@ -41,52 +75,60 @@ async def get_users(user_ids: List[int]) -> Optional[List[UserBase]]:
         return users
 
     except SQLAlchemyError as e:
-        logger.error(f"Ошибка при получении списка пользователей: {e}")
         raise e
 
 
-async def update_user(user_id: int, **kwargs) -> UserBase | bool:
+def update_user(
+    session_db: Session,
+    user_id: int,
+    **kwargs
+) -> UserBase | bool:
     """
     Обновление пользователя по id
 
+    :param session_db: сессия базы данных
     :param user_id: id пользователя
     :param kwargs: параметры для обновления
     :return: UserBase | bool
     """
     try:
-        user = await get_user_by_id(user_id)
+        user = get_user_by_id(session_db, user_id)
         if not user:
             return False
+
+        if "password" in kwargs:
+            kwargs["h_password"] = generate_password_hash(kwargs["password"])
 
         for key, value in kwargs.items():
             setattr(user, key, value)
 
-        request.db_session.commit()
+        session_db.commit()
 
         return user
 
     except SQLAlchemyError as e:
-        request.db_session.rollback()
-        logger.error(f"Ошибка при обновлении пользователя: {e}")
+        session_db.rollback()
         raise e
 
-async def delete_user(user_id: int) -> bool:
+
+def delete_user(session_db: Session, user_id: int) -> bool:
     """
     Удаление пользователя
 
+    :param session_db: сессия базы данных
     :param user_id: id пользователя
     :return: bool
     """
     try:
-        user = await get_user_by_id(user_id)
+        user = get_user_by_id(session_db, user_id)
         if not user:
             return False
 
-        request.db_session.delete(user)
-        request.db_session.commit()
+        session_db.delete(user)
+        session_db.commit()
+
+        return True
 
     except SQLAlchemyError as e:
-        request.db_session.rollback()
-        logger.error(f"Ошибка при удалении пользователя: {e}")
+        session_db.rollback()
         raise e
-

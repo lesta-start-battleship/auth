@@ -1,50 +1,57 @@
-from flask_restx import fields
-
-from authorization.namespace import auth_ns
-
-
-error_response = auth_ns.model("Error", {
-    "error": fields.String(description="Error message"),
-})
-
-user_reg_request = auth_ns.model(
-    "UserRegRequest", {
-        "username": fields.String(required=True, write_only=True),
-        "email": fields.String(
-            required=True,
-            write_only=True,
-            pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        ),
-        "password": fields.String(
-            required=True,
-            write_only=True,
-            pattern=r"(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$"
-        ),
-        "name": fields.String,
-        "surname": fields.String,
-
-    }
-)
-
-user_reg_response = auth_ns.model(
-    "UserRegResponse", {
-        "access_token": fields.String,
-        "refresh_token": fields.String,
-    }
-)
-
-user_login_request = auth_ns.model(
-    "UserLoginRequest", {
-        "username": fields.String(required=True),
-        "password": fields.String(required=True),
-    }
-)
-
-user_login_response = auth_ns.model(
-    "UserLoginResponse", {
-        "access_token": fields.String,
-        "refresh_token": fields.String,
-    }
-)
+import re
+from pydantic import BaseModel, field_validator, ValidationError, EmailStr
+from config import logger
 
 
+def validate_schema(schema_cls: type, **kwargs):
+    try:
+        check_validate = schema_cls(**kwargs)
+        return check_validate
+    except ValidationError as e:
+        logger.error(f"Ошибка валидации данных: {e}")
+        return e.errors()
+
+
+class UserRegRequest(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    name: str
+    surname: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, password):
+        if not password:
+            raise ValueError("Пароль не введен")
+        if not re.match(
+            r"(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$",
+            password
+        ):
+            raise ValueError(
+                "Неверный формат пароля, должен содержать хотя "
+                "бы одну заглавную букву, одну строчную букву и одну цифру,"
+                " длина не менее 8 символов"
+            )
+        return password
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, email):
+        if not email:
+            raise ValueError("Email не введен")
+        if not re.match(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            email
+        ):
+            raise ValueError("Неверный формат email")
+        return email
+
+
+class UserLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

@@ -1,6 +1,6 @@
 from functools import wraps
 
-from app.database.database import session
+from database.database import session
 
 
 def with_session(func):

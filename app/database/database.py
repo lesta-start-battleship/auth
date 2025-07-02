@@ -3,7 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-DSN = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{POSTGRES_DB}"
+DSN = (
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+    f"localhost:5432/{POSTGRES_DB}"
+)
 
-engine = create_engine(DSN, echo=True)
+engine = create_engine(DSN)
 session = sessionmaker(bind=engine, expire_on_commit=False)

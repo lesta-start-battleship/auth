@@ -1,13 +1,14 @@
-from flask import make_response, request
-from flask_restx import Resource
+from flask import make_response, request, Blueprint
+from flask.views import MethodView
 from typing import Dict
-from authorization.namespace import auth_ns
-
 from config import logger
-from authorization.services import get_user_by_username, create_user
 from errors import HttpError
+from decorators import with_session
+
+from authorization.services import get_user_by_username, create_user
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from database.models import UserBase
 
@@ -16,19 +17,21 @@ from werkzeug.security import check_password_hash
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     set_access_cookies, set_refresh_cookies, get_jwt_identity,
-    jwt_required
+    jwt_required, get_jwt
 )
 
 from authorization.schemas import (
-    user_reg_request,
-    user_reg_response,
-    error_response,
-    user_login_request,
-    user_login_response
+    validate_schema,
+    UserRegRequest,
+    UserLoginRequest,
+    RefreshTokenRequest
 )
 
 
-class BaseResource(Resource):
+auth_blueprint = Blueprint("Auth", __name__)
+
+
+class BaseAuthView(MethodView):
     """
     Базовый класс для обработки общих функций
     """
@@ -44,8 +47,7 @@ class BaseResource(Resource):
             identity=str(user.id),
             additional_claims={
                 "username": user.username,
-                "role": user.role,
-                "currencies": user.currencies # условнно связанное поле с таблицей валюты
+                "role": user.role.value
             }
         )
 
@@ -60,8 +62,7 @@ class BaseResource(Resource):
             identity=str(user.id),
             additional_claims={
                 "username": user.username,
-                "role": user.role,
-                "currencies": user.currencies # условнно связанное поле с таблицей валюты
+                "role": user.role.value
             }
         )
 
@@ -81,22 +82,27 @@ class BaseResource(Resource):
         """
         raise HttpError(status_code, message)
 
+    def handle_validation_errors(self, error_validation_data):
+        """
+        Обработка ошибок валидации
 
-@auth_ns.route("/registration/")
-class RegistrationView(BaseResource):
+        :param error_validation_data: данные ошибки валидации
+        :return: HttpError
+        """
+        raise HttpError(
+            400,
+            f"{error_validation_data[0]["loc"][0]}:"
+            f"{error_validation_data[0]["msg"]}"
+        )
+
+
+class RegistrationView(BaseAuthView):
     """
     Класс для регистрации нового пользователя
     """
-    @auth_ns.expect(user_reg_request)
-    @auth_ns.doc(
-        responses={
-            201: ("User registered successfully", user_reg_response),
-            400: ("User already exists", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Registration a new user",
-    )
-    async def post(self) -> Dict[str, str] | HttpError:
+
+    @with_session
+    def post(self, session_db: Session) -> Dict[str, str] | HttpError:
         """
         Регистрация нового пользователя
 
@@ -106,59 +112,55 @@ class RegistrationView(BaseResource):
         logger.info(
             f"Для регистрации пользователя приняты данные: {request.json}"
         )
-        user_data = request.json
+        validate_data = validate_schema(UserRegRequest, **request.json)
 
-        if await get_user_by_username(user_data["username"]): # проверка по мылу
-            self.handle_error(HttpError, "User already exists", 400)
+        if isinstance(validate_data, UserRegRequest):
 
-        try:
-            new_user = await create_user(user_data)
-            access_token = self._access_token(new_user)
-            refresh_token = self._refresh_token(new_user)
-            response = make_response({
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }, 201)
+            if get_user_by_username(session_db, validate_data.username):
+                self.handle_error(HttpError, "User already exists", 409)
 
-            set_access_cookies(
-                response,
-                access_token,
-                httponly=True,
-                secure=True
-            )
-            set_refresh_cookies(
-                response,
-                refresh_token,
-                httponly=True,
-                secure=True,
-                max_age=60*60*24*7
-            )
+            try:
+                new_user = create_user(session_db, validate_data.model_dump())
+                access_token = self._access_token(new_user)
+                refresh_token = self._refresh_token(new_user)
+                response = make_response({
+                    "access_token": f"Bearer {access_token}",
+                    "refresh_token": f"Bearer {refresh_token}"
+                }, 201)
 
-            return response
+                set_access_cookies(
+                    response,
+                    access_token,
+                    max_age=60*60*24
+                )
+                set_refresh_cookies(
+                    response,
+                    refresh_token,
+                    max_age=60*60*24*7
+                )
 
-        except SQLAlchemyError:
+                return response
+
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Ошибка при регистрации пользователя"
+                    f"с данными: {validate_data}: {e}"
+                )
+                self.handle_error(HttpError, "Internal server error", 500)
+        else:
             logger.error(
-                f"Ошибка при регистрации пользователя с данными: {user_data}"
+                f"Ошибка валидации данных регистрации: {validate_data}"
             )
-            self.handle_error(HttpError, "Internal server error", 500)
+            self.handle_validation_errors(validate_data)
 
 
-@auth_ns.route("/login/")
-class LoginView(BaseResource):
+class LoginView(BaseAuthView):
     """
     Класс для входа пользователя
     """
-    @auth_ns.expect(user_login_request)
-    @auth_ns.doc(
-        responses={
-            200: ("Login was successful", user_login_response),
-            400: ("Invalid password", error_response),
-            404: ("User not found", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Login a user",
-    )
-    async def post(self) -> Dict[str, str] | HttpError:
+
+    @with_session
+    def post(self, session_db: Session) -> Dict[str, str] | HttpError:
         """
         Вход пользователя
 
@@ -166,84 +168,107 @@ class LoginView(BaseResource):
         :return: Dict[access_token: str, refresh_token: str] | HttpError
         """
         logger.info(f"Для входа пользователя приняты данные: {request.json}")
-        user_data = request.json
+        validate_data = validate_schema(UserLoginRequest, **request.json)
 
-        user = await get_user_by_username(user_data["username"]) # проверка по мылу 
-        if not user:
-            self.handle_error(HttpError, "User not found", 404)
+        if isinstance(validate_data, UserLoginRequest):
+            user = get_user_by_username(session_db, validate_data.username)
+            if not user:
+                self.handle_error(HttpError, "User not found", 404)
 
-        try:
-            if not check_password_hash(user.password, user_data["password"]):
-                self.handle_error(HttpError, "Invalid password", 400)
+            try:
+                if not check_password_hash(
+                    user.h_password,
+                    validate_data.password
+                ):
+                    self.handle_error(HttpError, "Invalid password", 401)
 
-            access_token = self._access_token(user)
-            refresh_token = self._refresh_token(user)
+                access_token = self._access_token(user)
+                refresh_token = self._refresh_token(user)
 
-            response = make_response({
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }, 200)
+                response = make_response({
+                    "access_token": f"Bearer {access_token}",
+                    "refresh_token": f"Bearer {refresh_token}"
+                }, 200)
 
-            set_access_cookies(
-                response,
-                access_token,
-                httponly=True,
-                secure=True
-            )
-            set_refresh_cookies(
-                response,
-                refresh_token,
-                httponly=True,
-                secure=True,
-                max_age=60*60*24*7
-            )
+                set_access_cookies(
+                    response,
+                    access_token,
+                    max_age=60*60*24
+                )
+                set_refresh_cookies(
+                    response,
+                    refresh_token,
+                    max_age=60*60*24*7
+                )
 
-            return response
+                return response
 
-        except SQLAlchemyError:
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Ошибка при входе пользователя с данными: "
+                    f"{validate_data}: {e}"
+                )
+                self.handle_error(HttpError, "Internal server error", 500)
+        else:
             logger.error(
-                f"Ошибка при входе пользователя с данными: {user_data}"
+                f"Ошибка валидации данных входа: {validate_data}"
             )
-            self.handle_error(HttpError, "Internal server error", 500)
+            self.handle_validation_errors(validate_data)
 
 
-@auth_ns.route("/refresh_token/")
-class RefreshView(BaseResource):
-    @auth_ns.expect(user_reg_request)
-    @auth_ns.doc(
-        responses={
-            200: ("User logged in successfully", user_reg_response),
-            400: ("User already exists", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Login a user",
-        security=[{"JWT": []}]
-    )
+class RefreshView(BaseAuthView):
+
     @jwt_required(refresh=True)
-    async def post(self) -> Dict[str, str] | HttpError:
+    def post(self) -> Dict[str, str] | HttpError:
         """
         Обновление access токена
 
-        :param: refresh_token из cookies или заголовка Authorization
+        :param: refresh_token из cookies или заголовка
         :return: Dict[access_token: str] | HttpError
         """
-        try:
-            identity = get_jwt_identity()
-            access_token = self._access_token(identity)
+        validate_data = validate_schema(RefreshTokenRequest, **request.json)
 
-            response = make_response({
-                "access_token": access_token
-            }, 200)
+        if isinstance(validate_data, RefreshTokenRequest):
+            try:
+                claims = get_jwt()
+                access_token = create_access_token(
+                    identity=get_jwt_identity(),
+                    additional_claims={
+                        "username": claims["username"],
+                        "role": claims["role"]
+                    }
+                )
 
-            set_access_cookies(
-                response,
-                access_token,
-                httponly=True,
-                secure=True
+                response = make_response({
+                    "access_token": f"Bearer {access_token}"
+                }, 200)
+
+                set_access_cookies(
+                    response,
+                    access_token,
+                    max_age=60*60*24
+                )
+
+                return response
+
+            except Exception:
+                self.handle_error(HttpError, "Internal server error", 500)
+        else:
+            logger.error(
+                f"Ошибка валидации данных обновления токена: {validate_data}"
             )
+            self.handle_validation_errors(validate_data)
 
-            return response
 
-        except Exception:
-            self.handle_error(HttpError, "Internal server error", 500)
-            
+auth_blueprint.add_url_rule(
+    "/registration/",
+    view_func=RegistrationView.as_view("registration")
+)
+auth_blueprint.add_url_rule(
+    "/login/",
+    view_func=LoginView.as_view("login")
+)
+auth_blueprint.add_url_rule(
+    "/refresh_token/",
+    view_func=RefreshView.as_view("refresh")
+)

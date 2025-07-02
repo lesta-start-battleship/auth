@@ -1,4 +1,4 @@
-# Change Log
+# CHANGELOG
 
 All notable changes to this project will be documented in this file.
 
@@ -6,20 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
-## 0.1.0 - (2025-06-25)
+## [UNRELEASED] - 2025-07-02
+
+### Feat
+
+- feat(app): Authorization using Yandex
+
+### Feat
+
+- feat(app): Creating a Basic API
+
+    - Creating an application structure (view, models, database, authorization using Google)
+
+## [0.1.0] - (2025-06-25)
 
 ### Added
 - Project structure
 - Database tables and migrations
 
 ---
-
-# CHANGELOG
-
-## [UNRELEASED] - 2025-06-24
-
-### Feat
-
-- feat(api): Creating a Basic API
-
-    - Creating an application structure (view, models, database, authorization using Yandex and Google)

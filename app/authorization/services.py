@@ -1,32 +1,44 @@
-from flask import request
-from database.models import UserBase
+from sqlalchemy.orm import Session
+from database.models import UserBase, UserCurrency
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
 
 
-async def get_user_by_username(username: str) -> UserBase | bool:
+def get_user_by_username(
+    session_db: Session,
+    username: str
+) -> UserBase | bool:
     """
     Получение пользователя по username
     """
-    user = request.db_session.query(UserBase).filter_by(username=username).first()
+    user = session_db.query(UserBase).filter_by(username=username).first()
 
     if user is None:
         return False
 
     return user
 
-async def create_user(user_data: dict) -> UserBase | Exception:
+
+def create_user(
+    session_db: Session,
+    user_data: dict
+) -> UserBase | Exception:
     """
     Создание пользователя
     """
     try:
-        user_data["password"] = generate_password_hash(user_data["password"])
+        password = user_data.pop("password")
+        user_data["h_password"] = generate_password_hash(password)
         user = UserBase(**user_data)
-        request.db_session.add(user)
-        request.db_session.commit()
+        session_db.add(user)
+        session_db.flush()
+
+        currency = UserCurrency(user_id=user.id)
+        session_db.add(currency)
+        session_db.commit()
 
         return user
 
     except SQLAlchemyError as e:
-        request.db_session.rollback()
+        session_db.rollback()
         raise e

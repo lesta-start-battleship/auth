@@ -1,0 +1,561 @@
+openapi: "3.0.0"
+info:
+  title: API для регистрации, авторизации и работы с пользовательскими данными в игре "Морской бой"
+  version: 1.0.0
+paths:
+  /api/v1/auth/registration/:
+    post:
+      tags:
+        - Auth
+      operationId: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegRequest'
+      responses:
+        201:
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegResponse'
+        400:
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid data"
+        409:
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User already exists"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
+
+  /api/v1/auth/login/:
+    post:
+      tags:
+        - Auth
+      operationId: Авторизация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        200:
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginResponse'
+        400:
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Invalid data"
+        401:
+          description: Неверный пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Invalid password"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+
+  /api/v1/auth/login/google:
+      post:
+        tags:
+          - Auth
+        operationId: Авторизация пользователя через Google
+        responses:
+          200:
+            description: Успешная авторизация
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserLoginResponse'
+
+  /api/v1/auth/refresh_token/:
+    post:
+      tags:
+        - Auth
+      operationId: Обновление access токена
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        200:
+          description: Успешное обновление access токена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        400:
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Invalid data"
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Not authorized"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+
+  /api/v1/users/{user_id}:
+    get:
+      tags:
+        - User
+      operationId: Получение пользователя
+      security:
+        - jwt: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Успешное получение пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserResponse'
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not authorized"
+        403:
+          description: Недостаточно прав доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Permission denied"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
+    patch:
+      tags:
+        - User
+      operationId: Обновление пользователя
+      security:
+        - jwt: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest' 
+      responses:
+        200:
+          description: Успешное обновление пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserResponse'
+        400:
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Invalid data"
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Not authorized"
+        403:
+          description: Недостаточно прав доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Permission denied"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+    delete:
+      tags:
+        - User
+      operationId: Удаление пользователя
+      security:
+        - jwt: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      responses:
+        204:
+          description: Успешное удаление пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+        403:
+          description: Недостаточно прав доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Permission denied"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+
+  /api/v1/users/logout/:
+    post:
+      tags:
+        - User
+      operationId: Выход пользователя
+      security:
+        - jwt: []
+      responses:
+        200:
+          description: Успешное выход пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access token revoked"
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Not authorized"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+
+  /api/v1/users/:
+    get:
+      tags:
+        - Users
+      operationId: Получение списка пользователей
+      security:
+        - jwt: []
+      parameters:
+        - name: user_ids
+          in: query
+          required: true
+          description: Список id пользователей
+          schema:
+            type: array
+            items:
+              type: integer
+            example: [1, 2, 3]
+
+      responses:
+        200:
+          description: Успешное получение списка пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUsersListResponse'
+        400:
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Invalid data"
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Not authorized"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                example:
+                  error: "Internal server error"
+
+components:
+  securitySchemes:
+    jwt:
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    UserRegRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "Nagibator2000"
+        email:
+          type: string
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          description: Пароль должен содержать хотя бы одну заглавную букву, одну строчную букву и одну цифру, длина не менее 8 символов
+          example: "Password123456"
+        name:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Doe"
+
+    UserLoginResponse:
+      schema:
+        $ref: '#/components/schemas/UserRegResponse'
+
+    UserRegResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+    UserLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "Nagibator2000"
+        password:
+          type: string
+          example: "Password123456"
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+    GetUserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          example: "user@example.com"
+        username:
+          type: string
+          example: "Nagibator2000"
+        name:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Doe"
+        role:
+          type: string
+          example: "user"
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-06-30 23:05:53.889"
+        currencies:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            gold:
+              type: integer
+              example: 100
+            guild_rage:
+              type: integer
+              example: 15
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "user@example.com"
+        username:
+          type: string
+          example: "Nagibator2000"
+        password:
+          type: string
+          description: Пароль должен содержать хотя бы одну заглавную букву, одну строчную букву и одну цифру, длина не менее 8 символов
+          example: "Password123456"
+        name:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Doe"
+        role:
+          type: string
+          example: "user"
+
+    UpdateUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/GetUserResponse'
+
+    GetUsersListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetUserResponse'
+        

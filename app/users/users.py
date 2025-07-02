@@ -1,29 +1,45 @@
-from flask_restx import Resource
 from typing import Dict, List
+
 from errors import HttpError
+
 from extensions import jwt_redis_blocklist
+
+from config import logger, JWT_ACCESS_BLOCKLIST
+
+from decorators import with_session
+
+from flask import make_response, request, jsonify, Blueprint
+from flask.views import MethodView
 from flask_jwt_extended import (
     get_jwt_identity, get_jwt, jwt_required,
     unset_access_cookies, unset_refresh_cookies
 )
-from flask import make_response, request
+
 from sqlalchemy.exc import SQLAlchemyError
-from config import logger, JWT_ACCESS_BLOCKLIST
+from sqlalchemy.orm import Session
+
+
 from database.models import UserBase
 
-from users.namespace import user_ns
-from users.schemas import (
-    error_response,
-    get_user_response,
-    get_users_list_request,
-    get_users_list_response,
-    update_user_request,
-    update_user_response
+from users.services import (
+    get_full_user_by_id,
+    get_users,
+    update_user,
+    delete_user
 )
-from users.services import get_user_by_id, get_users, update_user, delete_user
+from users.schemas import (
+    validate_schema,
+    GetUserResponse,
+    UpdateUserRequest,
+    GetUsersListRequest,
+    GetUsersListResponse
+)
 
 
-class BaseResource(Resource):
+user_blueprint = Blueprint("Users", __name__)
+
+
+class BaseUserView(MethodView):
     """
     Базовый класс для обработки общих функций
     """
@@ -37,12 +53,12 @@ class BaseResource(Resource):
         """
         return int(get_jwt_identity())
 
-    def check_permission(self, user_id: int) -> None:
+    def check_permission(self, user_id: int) -> None | HttpError:
         """
         Проверка доступа к ресурсу
 
         :param user_id: id пользователя
-        :return: None
+        :return: None | HttpError
         """
         if self.user_id != user_id:
             self.handle_error(HttpError, "Permission denied", 403)
@@ -63,89 +79,113 @@ class BaseResource(Resource):
         """
         raise HttpError(status_code, message)
 
+    def handle_validation_errors(self, error_validation_data):
+        """
+        Обработка ошибок валидации
 
-@user_ns.route("/<int:user_id>")
-class UserResource(BaseResource):
+        :param error_validation_data: данные ошибки валидации
+        :return: HttpError
+        """
+        raise HttpError(
+            400,
+            f"{error_validation_data[0]["msg"].split(", ")[1]}"
+        )
+
+
+class UserView(BaseUserView):
     """
     Класс для получения, обновления и удаления пользователя
     """
-    @user_ns.doc(
-        responses={
-            200: ("User was found", get_user_response),
-            401: ("Unauthorized", error_response),
-            404: ("User not found", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Get user by id",
-    )
+
+    @with_session
     @jwt_required()
-    async def get(self, user_id: int) -> UserBase | HttpError:
+    def get(self, session_db: Session, user_id: int) -> UserBase | HttpError:
         """
         Получение пользователя по id
 
+        :param session_db: сессия базы данных
         :param user_id: id пользователя
         :return: UserBase | HttpError
         """
         self.check_permission(user_id)
         try:
-            user = await get_user_by_id(user_id)
+            user = get_full_user_by_id(session_db, user_id)
             if not user:
                 self.handle_error(HttpError, "User not found", 404)
 
-            return make_response(user, 200)
+            response_data = GetUserResponse.model_validate(user)
 
-        except SQLAlchemyError:
-            logger.error(f"Ошибка при получении пользователя c id: {user_id}")
+            if isinstance(response_data, GetUserResponse):
+                return jsonify(response_data.model_dump()), 200
+
+            else:
+                logger.error(
+                    f"Ошибка валидации данных {response_data}"
+                    f"от пользователя: {self.user_id}"
+                )
+                self.handle_error(HttpError, "Error returning user data", 500)
+
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Ошибка при получении пользователя c id: {user_id}: {e}"
+            )
             self.handle_error(HttpError, "Internal server error", 500)
 
-    @user_ns.expect(update_user_request)
-    @user_ns.doc(
-        responses={
-            200: ("User data was updated", update_user_response),
-            400: ("No user data provided", error_response),
-            401: ("Unauthorized", error_response),
-            404: ("User not found", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Update user by id",
-    )
+    @with_session
     @jwt_required()
-    async def patch(self, user_id: int) -> UserBase | HttpError:
+    def patch(self, session_db: Session, user_id: int) -> UserBase | HttpError:
         """
         Обновление пользователя по id
 
+        :param session_db: сессия базы данных
         :param user_id: id пользователя
         :return: UserBase | HttpError
         """
         self.check_permission(user_id)
-        user_data = request.json
-        if not user_data:
-            self.handle_error(HttpError, "No user data provided", 400)
-        try:    
-            user = await update_user(user_id, **user_data)
-            if not user:
-                self.handle_error(HttpError, "User not found", 404)
+        user_data = validate_schema(UpdateUserRequest, **request.json)
+        if isinstance(user_data, UpdateUserRequest):
 
-            return make_response(user, 200)
+            try:
+                user = update_user(
+                    session_db,
+                    user_id,
+                    **user_data.model_dump(exclude_none=True)
+                )
+                if not user:
+                    self.handle_error(HttpError, "User not found", 404)
 
-        except SQLAlchemyError:
+                response_data = GetUserResponse.model_validate(user)
+                if isinstance(response_data, GetUserResponse):
+                    return jsonify(response_data.model_dump()), 200
+
+                else:
+                    logger.error(
+                        f"Ошибка валидации данных {response_data}"
+                        f"от пользователя: {self.user_id}"
+                    )
+                    self.handle_error(
+                        HttpError,
+                        "Error returning user data",
+                        500
+                    )
+
+            except SQLAlchemyError as e:
+                logger.error(
+                    f"Ошибка при обновлении пользователя c id: {user_id} и"
+                    f"с данными: {user_data}: {e}"
+                )
+                self.handle_error(HttpError, "Internal server error", 500)
+
+        else:
             logger.error(
-                f"Ошибка при обновлении пользователя c id: {user_id} и"
-                f"с данными: {user_data}"
+                f"Ошибка валидации данных {user_data}"
+                f"от пользователя: {self.user_id}"
             )
-            self.handle_error(HttpError, "Internal server error", 500)
+            self.handle_validation_errors(user_data)
 
-    @user_ns.doc(
-        responses={
-            204: "User deleted successfully",
-            401: ("Unauthorized", error_response),
-            404: ("User not found", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Delete user by id",
-    )
+    @with_session
     @jwt_required()
-    async def delete(self, user_id: int) -> bool | HttpError:
+    def delete(self, session_db: Session, user_id: int) -> bool | HttpError:
         """
         Удаление пользователя по id
 
@@ -154,75 +194,101 @@ class UserResource(BaseResource):
         """
         self.check_permission(user_id)
         try:
-            user = await delete_user(user_id)
+            user = delete_user(session_db, user_id)
             if not user:
                 self.handle_error(HttpError, "User not found", 404)
 
-            return make_response("User deleted successfully", 204)
+            return make_response({"message": "User deleted successfully"}, 204)
 
-        except SQLAlchemyError:
-            logger.error(f"Ошибка при удалении пользователя c id: {user_id}")
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Ошибка при удалении пользователя c id: {user_id}: {e}"
+            )
             self.handle_error(HttpError, "Internal server error", 500)
 
 
-@user_ns.route("/")
-class GetUsersListResource(BaseResource):
+class GetUsersListResource(BaseUserView):
     """
     Класс для получения списка пользователей
     """
-    @user_ns.expect(get_users_list_request)
-    @user_ns.doc(
-        responses={
-            200: ("List of users was fetched", get_users_list_response),
-            401: ("Unauthorized", error_response),
-            400: ("No user IDs provided", error_response),
-            404: ("Users not found", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Get users by ids",
-    )
+
+    @with_session
     @jwt_required()
-    async def get(self) -> List[UserBase] | HttpError:
+    def get(self, session_db: Session) -> List[UserBase] | HttpError:
         """
         Получение списка пользователей по id
 
+        :param session_db: сессия базы данных
+        :param user_ids: список id пользователей
         :return: List[UserBase] | HttpError
         """
         user_ids = request.args.getlist("user_ids", type=int)
-        if not user_ids:
-            self.handle_error(HttpError, "No users IDs provided", 400)
-        try:
-            users = await get_users(user_ids)
-            if users is None:
-                self.handle_error(HttpError, "Users not found", 404)
+        validate_users_ids = validate_schema(
+            GetUsersListRequest,
+            user_ids=user_ids
+        )
+        if isinstance(validate_users_ids, GetUsersListRequest):
 
-            return make_response({"users": users}, 200)
+            try:
+                users = get_users(session_db, validate_users_ids.user_ids)
 
-        except SQLAlchemyError as e:
-            logger.error(f"Ошибка при получении списка пользователей: {e}")
-            self.handle_error(HttpError, "Internal server error", 500)
+                response_data = validate_schema(
+                    GetUsersListResponse,
+                    users=users
+                )
+                if isinstance(response_data, GetUsersListResponse):
+                    return jsonify(response_data.model_dump()), 200
+
+                else:
+                    logger.error(
+                        f"Ошибка валидации данных {response_data}"
+                        f"от пользователя: {self.user_id}"
+                    )
+                    self.handle_error(
+                        HttpError,
+                        "Error returning user data",
+                        500
+                    )
+
+            except SQLAlchemyError as e:
+                logger.error(f"Ошибка при получении списка пользователей: {e}")
+                self.handle_error(HttpError, "Internal server error", 500)
 
 
-@user_ns.route("/logout/")
-class LogoutUserResource(BaseResource):
-    @user_ns.doc(
-        responses={
-            200: "Access token revoked",
-            401: ("Unauthorized", error_response),
-            500: ("Internal server error", error_response)
-        },
-        description="Logout a user",
-        security=[{"JWT": []}]
-    )
+class LogoutUserResource(BaseUserView):
+
     @jwt_required()
-    def delete(self) -> Dict[str, str] | HttpError:
+    def post(self) -> Dict[str, str] | HttpError:
         """
         Выход пользователя
 
         :return: Dict[str, str] | HttpError
         """
-        jti = get_jwt()["jti"]
-        jwt_redis_blocklist.set(jti, "", ex=JWT_ACCESS_BLOCKLIST)
-        unset_access_cookies()
-        unset_refresh_cookies()
-        return make_response({"message": "Access token revoked"}, 200)
+        try:
+            jti = get_jwt()["jti"]
+            jwt_redis_blocklist.set(jti, "", ex=JWT_ACCESS_BLOCKLIST)
+
+            response = make_response({"message": "Пользователь вышел"}, 200)
+            unset_access_cookies(response)
+            unset_refresh_cookies(response)
+
+            logger.info(f"Access token revoked for user {self.user_id}")
+            return response
+
+        except Exception as e:
+            logger.error(f"Ошибка при выходе пользователя: {e}")
+            self.handle_error(HttpError, "Internal server error", 500)
+
+
+user_blueprint.add_url_rule(
+    "/<int:user_id>",
+    view_func=UserView.as_view("user")
+)
+user_blueprint.add_url_rule(
+    "/",
+    view_func=GetUsersListResource.as_view("get_users_list")
+)
+user_blueprint.add_url_rule(
+    "/logout/",
+    view_func=LogoutUserResource.as_view("logout")
+)
