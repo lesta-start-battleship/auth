@@ -98,7 +98,7 @@ paths:
                   error: "Internal server error"
 
   /api/v1/auth/login/google:
-      post:
+      get:
         tags:
           - Auth
         operationId: Авторизация пользователя через Google
@@ -109,6 +109,19 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserLoginResponse'
+
+  /api/v1/auth/login/yandex:
+    get:
+      tags:
+        - Auth
+      operationId: Авторизация пользователя через Yandex
+      responses:
+        200:
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginResponse'
 
   /api/v1/auth/refresh_token/:
     post:
