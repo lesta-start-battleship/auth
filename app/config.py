@@ -35,6 +35,9 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
+YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
+YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
+
 google = oauth.register(
     name="google",
     client_id=GOOGLE_CLIENT_ID,
