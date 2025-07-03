@@ -10,10 +10,16 @@ from flask import url_for, make_response, jsonify, request, redirect
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 
+from app.config import logger
+
 
 class GoogleLogin(MethodView):
     def get(self):
         cli_redirect_uri = request.args.get("redirect_uri")
+
+        if not cli_redirect_uri:
+            logger.info(f"Запрос на авторизацию отправлен из браузера (не CLI)")
+
         redirect_uri = url_for("Auth.google_authorize", _external=True)
 
         return google.authorize_redirect(
@@ -25,14 +31,29 @@ class GoogleAuthorize(BaseAuthView):
     @with_session
     def get(self, session_db):
         token = google.authorize_access_token()  # noqa
-        user_info = google.get(
-            google.server_metadata["userinfo_endpoint"]
-        ).json()
+
+        try:
+            user_info = google.get(
+                google.server_metadata["userinfo_endpoint"]
+            ).json()
+        except Exception as e:
+            logger.error(f"Ошибка получения данных аккаунта Google: {str(e)}")
+            return jsonify(
+                {"error": f"Не удалось получить информацию о пользователе Google: {str(e)}"}
+            ), 400
+
         email = user_info.get("email")
+
+        if not email:
+            logger.error("Email отсутствует в ответе Google")
+            return jsonify(
+                {"error": "Email отсутствует в данных пользователя Google"}
+            ), 400
 
         user = get_user_by_email(session_db, email)
 
         if not user:
+            logger.info(f"Создание нового пользователя с данными из Google")
             user = create_user(
                 session_db,
                 email=email,
@@ -40,6 +61,8 @@ class GoogleAuthorize(BaseAuthView):
                 surname=user_info.get("family_name"),
                 username=email.split('@')[0]
             )
+        else:
+            logger.info(f"Пользователь Google найден: {user.username}")
 
             registration_user_signal.send(
                 self.__class__,
@@ -82,15 +105,26 @@ class GoogleAuthorize(BaseAuthView):
         parsed = parse_qs(state)
         cli_redirect = parsed.get("cli_redirect", [None])[0]
 
-        if cli_redirect:
-            from json import dumps
-            import base64
+        if cli_redirect and cli_redirect != "None":
+            try:
+                from json import dumps
+                import base64
 
-            encoded = base64.urlsafe_b64encode(
-                dumps(response_data).encode()
-            ).decode()
+                encoded = base64.urlsafe_b64encode(
+                    dumps(response_data).encode()
+                ).decode()
 
-            return redirect(f"{cli_redirect}?data={encoded}")
+                logger.info(
+                    "Перенаправление обратно в CLI с зашифрованными данными..."
+                )
+                return redirect(f"{cli_redirect}?data={encoded}")
+            except Exception as e:
+                logger.error(f"Ошибка кодирования данных для CLI: {str(e)}")
+                return jsonify(
+                    {"error": f"Не удалось закодировать данные для CLI: {str(e)}"}
+                ), 500
+
+        logger.info("Аутентификация завершена, отправка ответа в браузер")
         return jsonify(response_data), 200
 
 
