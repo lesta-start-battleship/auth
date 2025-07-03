@@ -90,7 +90,7 @@ class BaseUserView(MethodView):
         """
         raise HttpError(
             400,
-            f"{error_validation_data[0]["msg"].split(", ")[1]}"
+            f"{error_validation_data[0]['msg'].split(', ')[1]}"
         )
 
 
