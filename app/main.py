@@ -1,6 +1,5 @@
 from datetime import datetime, timezone, timedelta
 
-from app.config import FLASK_PORT
 from authorization.auth import auth_blueprint
 from authorization.google import api_routes # noqa
 from authorization.yandex import api_routes # noqa
@@ -30,7 +29,8 @@ from config import (
     JWT_REFRESH_TOKEN_EXPIRES,
     FLASK_SECRET_KEY,
     JWT_SECRET_KEY,
-    logger
+    logger,
+    FLASK_PORT
 )
 
 
