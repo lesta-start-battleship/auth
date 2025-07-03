@@ -10,7 +10,7 @@ from signals import registration_user_signal
 from flask import url_for, make_response, jsonify, redirect, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
-from app.config import logger, YANDEX_AUTH_URL
+from config import logger, YANDEX_AUTH_URL
 from json import dumps
 import base64
 

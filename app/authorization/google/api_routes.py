@@ -10,7 +10,7 @@ from flask import url_for, make_response, jsonify, request, redirect
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 
-from app.config import logger, GOOGLE_AUTH_URL
+from config import logger, GOOGLE_AUTH_URL
 from json import dumps
 import base64
 
