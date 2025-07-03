@@ -10,7 +10,7 @@ from flask import url_for, make_response, jsonify, request, redirect
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 
-from app.config import logger
+from app.config import logger, GOOGLE_AUTH_URL
 from json import dumps
 import base64
 
@@ -131,6 +131,11 @@ class GoogleAuthorize(BaseAuthView):
         return jsonify(response_data), 200
 
 
+class GoogleAuthLink(MethodView):
+    def get(self):
+        return jsonify({"google_url": GOOGLE_AUTH_URL})
+
+
 auth_blueprint.add_url_rule(
     "/login/google",
     view_func=GoogleLogin.as_view("google_login")
@@ -138,4 +143,7 @@ auth_blueprint.add_url_rule(
 auth_blueprint.add_url_rule(
     "/google/callback",
     view_func=GoogleAuthorize.as_view("google_authorize")
+)
+auth_blueprint.add_url_rule(
+    "/link/google", view_func=GoogleAuthLink.as_view("google_auth_link")
 )

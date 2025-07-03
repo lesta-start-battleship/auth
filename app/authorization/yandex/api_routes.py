@@ -10,7 +10,7 @@ from signals import registration_user_signal
 from flask import url_for, make_response, jsonify, redirect, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
-from app.config import logger
+from app.config import logger, YANDEX_AUTH_URL
 from json import dumps
 import base64
 
@@ -167,6 +167,11 @@ class YandexAuthorize(BaseAuthView):
         return jsonify(response_data), 200
 
 
+class YandexAuthLink(MethodView):
+    def get(self):
+        return jsonify({"yandex_url": YANDEX_AUTH_URL})
+
+
 auth_blueprint.add_url_rule(
     "/login/yandex",
     view_func=YandexLogin.as_view("yandex_login")
@@ -174,4 +179,7 @@ auth_blueprint.add_url_rule(
 auth_blueprint.add_url_rule(
     "/yandex/callback",
     view_func=YandexAuthorize.as_view("yandex_authorize")
+)
+auth_blueprint.add_url_rule(
+    "/link/yandex", view_func=YandexAuthLink.as_view("yandex_auth_link")
 )
