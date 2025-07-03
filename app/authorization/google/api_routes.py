@@ -11,6 +11,8 @@ from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 
 from app.config import logger
+from json import dumps
+import base64
 
 
 class GoogleLogin(MethodView):
@@ -19,6 +21,10 @@ class GoogleLogin(MethodView):
 
         if not cli_redirect_uri:
             logger.info(f"Запрос на авторизацию отправлен из браузера (не CLI)")
+        else:
+            logger.info(
+                f"Запрос на авторизацию через Google с CLI редиректом: {cli_redirect_uri}"
+            )
 
         redirect_uri = url_for("Auth.google_authorize", _external=True)
 
@@ -30,7 +36,13 @@ class GoogleLogin(MethodView):
 class GoogleAuthorize(BaseAuthView):
     @with_session
     def get(self, session_db):
-        token = google.authorize_access_token()  # noqa
+        try:
+            token = google.authorize_access_token()
+        except Exception as e:
+            logger.error(f"Ошибка при получении токена от Google: {str(e)}")
+            return jsonify(
+                {"error": f"Не удалось получить токен Google: {str(e)}"}
+            ), 400
 
         try:
             user_info = google.get(
@@ -43,13 +55,6 @@ class GoogleAuthorize(BaseAuthView):
             ), 400
 
         email = user_info.get("email")
-
-        if not email:
-            logger.error("Email отсутствует в ответе Google")
-            return jsonify(
-                {"error": "Email отсутствует в данных пользователя Google"}
-            ), 400
-
         user = get_user_by_email(session_db, email)
 
         if not user:
@@ -107,13 +112,9 @@ class GoogleAuthorize(BaseAuthView):
 
         if cli_redirect and cli_redirect != "None":
             try:
-                from json import dumps
-                import base64
-
                 encoded = base64.urlsafe_b64encode(
                     dumps(response_data).encode()
                 ).decode()
-
                 logger.info(
                     "Перенаправление обратно в CLI с зашифрованными данными..."
                 )
@@ -124,7 +125,9 @@ class GoogleAuthorize(BaseAuthView):
                     {"error": f"Не удалось закодировать данные для CLI: {str(e)}"}
                 ), 500
 
-        logger.info("Аутентификация завершена, отправка ответа в браузер")
+        logger.info(
+            f"Аутентификация для {user.username} c помощью Google завершена, отправка ответа в браузер"
+        )
         return jsonify(response_data), 200
 
 
