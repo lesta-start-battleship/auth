@@ -3,7 +3,7 @@ from urllib.parse import urlencode, parse_qs
 from authorization.auth import BaseAuthView
 from authorization.auth import auth_blueprint
 from authorization.google.services import get_user_by_email, create_user
-from config import google
+from init_oauth import google
 from signals import registration_user_signal
 from decorators import with_session
 from flask import url_for, make_response, jsonify, request, redirect
