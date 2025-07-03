@@ -97,31 +97,31 @@ paths:
                 example:
                   error: "Internal server error"
 
-  /api/v1/auth/login/google:
+  /api/v1/auth/link/google:
       get:
         tags:
           - Auth
-        operationId: Авторизация пользователя через Google
+        operationId: Ссылка на авторизацию пользователя через Google
         responses:
           200:
-            description: Успешная авторизация
+            description: Успешное получение ссылки на авторизацию
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/UserLoginResponse'
+                  $ref: '#/components/schemas/UserGoogleLoginResponse'
 
-  /api/v1/auth/login/yandex:
+  /api/v1/auth/link/yandex:
     get:
       tags:
         - Auth
-      operationId: Авторизация пользователя через Yandex
+      operationId: Ссылка на авторизацию пользователя через Yandex
       responses:
         200:
-          description: Успешная авторизация
+          description: Успешное получение ссылки на авторизацию
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserLoginResponse'
+                $ref: '#/components/schemas/UserYandexLoginResponse'
 
   /api/v1/auth/refresh_token/:
     post:
@@ -455,6 +455,20 @@ components:
         surname:
           type: string
           example: "Doe"
+
+    UserGoogleLoginResponse:
+      type: object
+      properties:
+        google_link:
+          type: string
+          example: https://domain.com/api/v1/auth/login/google
+
+    UserYandexLoginResponse:
+      type: object
+      properties:
+        yandex_link:
+          type: string
+          example: https://domain.com/api/v1/auth/login/yandex
 
     UserLoginResponse:
       schema:
