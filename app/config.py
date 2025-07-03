@@ -13,6 +13,7 @@ logger.addHandler(handler)
 
 load_dotenv(override=True)
 
+FLASK_PORT = os.getenv("FLASK_PORT")
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
 
 POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -34,9 +35,11 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_AUTH_URL = f"http://127.0.0.1:{FLASK_PORT}/api/v1/auth/login/google"
 
 YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
 YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
+YANDEX_AUTH_URL = f"http://127.0.0.1:{FLASK_PORT}/api/v1/auth/login/yandex"
 
 google = oauth.register(
     name="google",
