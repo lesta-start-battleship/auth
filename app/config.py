@@ -4,7 +4,6 @@ from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from datetime import timedelta
 
-from extensions import oauth
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,6 +14,9 @@ load_dotenv(override=True)
 
 FLASK_PORT = os.getenv("FLASK_PORT")
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
+
+CACHE_REDIS_HOST = os.getenv("CACHE_REDIS_HOST")
+CACHE_REDIS_PORT = os.getenv("CACHE_REDIS_PORT")
 
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -40,11 +42,3 @@ GOOGLE_AUTH_URL = f"http://127.0.0.1:{FLASK_PORT}/api/v1/auth/login/google"
 YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
 YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
 YANDEX_AUTH_URL = f"http://127.0.0.1:{FLASK_PORT}/api/v1/auth/login/yandex"
-
-google = oauth.register(
-    name="google",
-    client_id=GOOGLE_CLIENT_ID,
-    client_secret=GOOGLE_CLIENT_SECRET,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration", # noqa
-    client_kwargs={"scope": "openid email profile"}
-)
