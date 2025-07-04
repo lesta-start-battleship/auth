@@ -1,5 +1,5 @@
 import re
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator, EmailStr
 from typing import List
 from datetime import datetime
 from database.models import Role
@@ -40,7 +40,7 @@ class GetUserResponse(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
-    email: str | None = None
+    email: EmailStr | None = None
     username: str | None = None
     password: str | None = None
     name: str | None = None
@@ -62,18 +62,6 @@ class UpdateUserRequest(BaseModel):
                 " длина не менее 8 символов"
             )
         return password
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, email):
-        if not email:
-            raise ValueError("Email не введен")
-        if not re.match(
-            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-            email
-        ):
-            raise ValueError("Неверный формат email")
-        return email
 
     @field_validator("role")
     @classmethod

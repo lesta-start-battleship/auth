@@ -31,7 +31,8 @@ from config import (
     JWT_REFRESH_TOKEN_EXPIRES,
     FLASK_SECRET_KEY,
     JWT_SECRET_KEY,
-    logger
+    logger,
+    FLASK_PORT
 )
 
 

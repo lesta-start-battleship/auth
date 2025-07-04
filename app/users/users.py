@@ -92,7 +92,7 @@ class BaseUserView(MethodView):
         """
         raise HttpError(
             400,
-            f"{error_validation_data[0]["msg"]}"
+            f"{error_validation_data[0]['msg']}"
         )
 
 

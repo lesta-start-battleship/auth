@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [0.6.0] - (2025-07-04)
+
+### Feat
+
+- feat(app): Adding Orchestration and Containerization
+
+    - Adding docker-compose and dockerfile
+    - Adding missing files when switching to another branch
+
+
 ## [0.5.0] - (2025-07-03)
 
 ### Feat
