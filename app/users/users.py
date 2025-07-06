@@ -8,8 +8,6 @@ from config import logger, JWT_ACCESS_BLOCKLIST
 
 from decorators import with_session
 
-from signals import change_username_signal
-
 from flask import make_response, request, jsonify, Blueprint
 from flask.views import MethodView
 from flask_jwt_extended import (
@@ -157,12 +155,6 @@ class UserView(BaseUserView):
                     self.handle_error(HttpError, "User not found", 404)
 
                 response_data = GetUserResponse.model_validate(user)
-                if user_data.username:
-                    change_username_signal.send(
-                        self.__class__,
-                        user_id=user_id,
-                        username=user_data.username
-                    )
                 if isinstance(response_data, GetUserResponse):
                     return jsonify(response_data.model_dump()), 200
 
