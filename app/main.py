@@ -1,19 +1,12 @@
 from datetime import datetime, timezone, timedelta
-
+from threading import Thread
+from kafka.consumer import start_consumer_loop
 from authorization.auth import auth_blueprint
-from authorization.google import api_routes # noqa
-from authorization.yandex import api_routes # noqa
-
+from authorization.oauth.google import api_routes # noqa
+from authorization.oauth.yandex import api_routes # noqa
 from users.users import user_blueprint
-
 from extensions import jwt_redis_blocklist, oauth
-
 from errors import HttpError
-from signals import (
-    user_registered_handler, registration_user_signal,
-    change_username_handler, change_username_signal
-)
-
 from flask import Flask, Response, jsonify
 from flasgger import Swagger
 from flask_jwt_extended import JWTManager
@@ -23,7 +16,6 @@ from flask_jwt_extended import (
     create_access_token,
     set_access_cookies
 )
-
 from config import (
     JWT_ACCESS_TOKEN_EXPIRES,
     JWT_REFRESH_TOKEN_EXPIRES,
@@ -43,9 +35,6 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
 app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 app.config["JWT_COOKIE_SECURE"] = True
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
-
-registration_user_signal.connect(user_registered_handler)
-change_username_signal.connect(change_username_handler)
 
 app.register_blueprint(auth_blueprint, url_prefix="/api/v1/auth")
 app.register_blueprint(user_blueprint, url_prefix="/api/v1/users")
@@ -110,5 +99,5 @@ def refresh_expiring_jwts(response: Response):
 
 
 if __name__ == "__main__":
-    # Thread(target=start_kafka_consumer, daemon=True).start()
+    Thread(target=start_consumer_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=FLASK_PORT)
