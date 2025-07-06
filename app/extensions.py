@@ -11,3 +11,9 @@ jwt_redis_blocklist = redis.StrictRedis(
     db=0,
     decode_responses=True
 )
+device_login_redis = redis.StrictRedis(
+    host=CACHE_REDIS_HOST,
+    port=CACHE_REDIS_PORT,
+    db=1,
+    decode_responses=True
+)
