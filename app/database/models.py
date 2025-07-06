@@ -1,5 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, Enum as SQLEnum, ForeignKey, DateTime
+from sqlalchemy import (
+    String, Integer, Enum as SQLEnum, ForeignKey, DateTime, Boolean
+)
 from datetime import datetime
 from enum import Enum
 
@@ -21,6 +23,11 @@ class TransactionStatus(Enum):
     DECLINED = "declined"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class OAuthProvider(Enum):
+    GOOGLE = "google"
+    YANDEX = "yandex"
 
 
 class Base(DeclarativeBase):
@@ -59,7 +66,8 @@ class UserBase(Base):
         "UserCurrency",
         back_populates="user",
         cascade="all, delete-orphan",
-        uselist=False
+        uselist=False,
+        lazy="joined"
     )
     transactions: Mapped[list["UserTransaction"]] = relationship(
         "UserTransaction",
@@ -125,4 +133,26 @@ class UserTransaction(Base):
             f"<UserTransaction {self.transaction_id}: "
             f"{self.amount} {self.currency_type} "
             f"for user {self.user_id} - {self.status}>"
+        )
+
+
+class DeviceLogin(Base):
+    __tablename__ = "device_logins"
+
+    device_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    user_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    provider: Mapped[OAuthProvider] = mapped_column(
+        SQLEnum(OAuthProvider), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return (
+            f"<DeviceLogin {self.device_code}, user_code={self.user_code}, "
+            f"user_id={self.user_id}, verified={self.is_verified}>"
         )
