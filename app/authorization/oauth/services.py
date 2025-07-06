@@ -40,6 +40,7 @@ def create_user(
             "user_id": new_user.id,
             "username": new_user.username,
             "email": new_user.email,
+            "role": new_user.role.value.lower(),
             "gold": 0
         })
 
