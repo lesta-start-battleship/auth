@@ -13,7 +13,6 @@ from authorization.oauth.services import (
     delete_device_login_record
 )
 from decorators import with_session
-from signals import registration_user_signal
 from flask import url_for, make_response, jsonify, redirect, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
@@ -89,17 +88,8 @@ class YandexAuthorize(BaseAuthView):
         if not user:
             logger.info(f"Создание нового пользователя с данными из Yandex")
             user = create_user(
-                session_db,
-                email=email,
-                name=name,
-                surname=surname,
-                username=email.split("@")[0]
-            )
-        else:
-            logger.info(f"Пользователь Yandex найден: {user.username}")
-            registration_user_signal.send(
-                self.__class__,
-                user_id=user.id
+                session_db, email=email, name=name,
+                surname=surname, username=email.split("@")[0]
             )
 
         access_token = self._access_token(user)

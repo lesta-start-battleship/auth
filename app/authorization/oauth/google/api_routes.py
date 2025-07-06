@@ -10,7 +10,6 @@ from authorization.oauth.services import (
     delete_device_login_record
 )
 from init_oauth import google
-from signals import registration_user_signal
 from decorators import with_session
 from flask import url_for, make_response, jsonify, request
 from flask.views import MethodView
@@ -53,18 +52,9 @@ class GoogleAuthorize(BaseAuthView):
         if not user:
             logger.info(f"Создание нового пользователя с данными из Google")
             user = create_user(
-                session_db,
-                email=email,
-                name=user_info.get("given_name"),
+                session_db, email=email, name=user_info.get("given_name"),
                 surname=user_info.get("family_name"),
                 username=email.split('@')[0]
-            )
-        else:
-            logger.info(f"Пользователь Google найден: {user.username}")
-
-            registration_user_signal.send(
-                self.__class__,
-                user_id=user.id
             )
 
         access_token = self._access_token(user)
