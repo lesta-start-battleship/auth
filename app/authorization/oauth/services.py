@@ -5,7 +5,7 @@ from database.models import UserBase, Role, UserCurrency, DeviceLogin, OAuthProv
 from extensions import device_login_redis
 from authorization.oauth.device_cache import DeviceLoginCache
 
-from kafka.kafka import send_scoreboard_event
+from kafka.producer import send_message_to_kafka
 
 cache = DeviceLoginCache(device_login_redis)
 
@@ -34,15 +34,17 @@ def create_user(
     session_db.commit()
     session_db.refresh(new_user)
 
-    send_scoreboard_event(
-        "prod.auth.fact.new-user.1",
-        {
+    send_message_to_kafka(
+        topic="prod.auth.fact.new-user.1",
+        payload={
             "user_id": new_user.id,
             "username": new_user.username,
             "email": new_user.email,
             "role": new_user.role.value.lower(),
             "gold": 0
-        })
+        },
+        target_service="scoreboard"
+    )
 
     return new_user
 
