@@ -1,14 +1,15 @@
-from urllib.parse import urlencode, parse_qs
-from datetime import datetime
-
 import requests
 import uuid
-from authorization.auth import BaseAuthView
-from authorization.auth import auth_blueprint
-from authorization.google.services import (
+
+from urllib.parse import urlencode
+from datetime import datetime
+from authorization.auth import BaseAuthView, auth_blueprint
+from authorization.oauth.yandex.services import (
+    get_user_by_id, get_device_login_record, get_params_for_oauth,
+    fetch_yandex_user_info, get_or_create_user, mark_device_login_verified
+)
+from authorization.oauth.services import (
     get_user_by_email, create_user, create_device_login_record,
-    get_device_login_record, get_params_for_oauth, fetch_yandex_user_info,
-    get_or_create_user, mark_device_login_verified, get_user_by_id,
     delete_device_login_record
 )
 from decorators import with_session
@@ -20,26 +21,12 @@ from config import (
     logger, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET, YANDEX_AUTH_URL,
     YANDEX_REDIRECT_URL
 )
-from json import dumps
-import base64
 
 
 class YandexLogin(MethodView):
     def get(self):
-        cli_redirect_uri = request.args.get("redirect_uri")
-
-        if not cli_redirect_uri:
-            logger.info("Запрос на авторизацию через Yandex (не CLI)")
-        else:
-            logger.info(
-                f"Запрос на авторизацию через Yandex с CLI редиректом: {cli_redirect_uri}"
-            )
-
+        logger.info("Запрос на авторизацию через Yandex из браузера")
         redirect_uri = url_for("Auth.yandex_authorize", _external=True)
-        state = urlencode(
-            {"cli_redirect": cli_redirect_uri}
-        ) if cli_redirect_uri else None
-
         params = {
             "response_type": "code",
             "client_id": YANDEX_CLIENT_ID,
@@ -47,11 +34,8 @@ class YandexLogin(MethodView):
             "display": "popup",
             "force_confirm": "yes"
         }
-
-        if state:
-            params["state"] = state
-
         auth_url = f"https://oauth.yandex.ru/authorize?{urlencode(params)}"
+
         return redirect(auth_url)
 
 
@@ -74,8 +58,9 @@ class YandexAuthorize(BaseAuthView):
                 "client_secret": YANDEX_CLIENT_SECRET
             }
 
-            response = requests.post("https://oauth.yandex.ru/token",
-                                     data=token_data)
+            response = requests.post(
+                "https://oauth.yandex.ru/token", data=token_data
+            )
             response.raise_for_status()
             token_info = response.json()
         except Exception as e:
@@ -87,7 +72,7 @@ class YandexAuthorize(BaseAuthView):
         try:
             headers = {"Authorization": f"OAuth {token_info['access_token']}"}
             user_info = requests.get(
-                "https://login.yandex.ru/info",headers=headers
+                "https://login.yandex.ru/info", headers=headers
             ).json()
         except Exception as e:
             logger.error(
@@ -99,7 +84,6 @@ class YandexAuthorize(BaseAuthView):
         email = user_info.get("default_email")
         name = user_info.get("first_name")
         surname = user_info.get("last_name")
-
         user = get_user_by_email(session_db, email)
 
         if not user:
@@ -113,7 +97,6 @@ class YandexAuthorize(BaseAuthView):
             )
         else:
             logger.info(f"Пользователь Yandex найден: {user.username}")
-
             registration_user_signal.send(
                 self.__class__,
                 user_id=user.id
@@ -127,8 +110,8 @@ class YandexAuthorize(BaseAuthView):
             "username": user.username,
             "email": user.email,
             "currencies": {
-                "guild_rage": user.currencies.guild_rage if user.currencies else 0,
-                "gold": user.currencies.gold if user.currencies else 0
+                "guild_rage": user.currencies.guild_rage,
+                "gold": user.currencies.gold
             }
         }
 
@@ -139,7 +122,6 @@ class YandexAuthorize(BaseAuthView):
         }
 
         response = make_response(response_data, 200)
-
         set_access_cookies(
             response,
             access_token,
@@ -150,29 +132,10 @@ class YandexAuthorize(BaseAuthView):
             refresh_token,
             max_age=60 * 60 * 24 * 7
         )
-
-        state = request.args.get("state")
-        parsed = parse_qs(state)
-        cli_redirect = parsed.get("cli_redirect", [None])[0]
-
-        if cli_redirect:
-            try:
-                encoded = base64.urlsafe_b64encode(
-                    dumps(response_data).encode()
-                ).decode()
-                logger.info(
-                    "Перенаправление обратно в CLI с зашифрованными данными..."
-                )
-                return redirect(f"{cli_redirect}?data={encoded}")
-            except Exception as e:
-                logger.error(f"Ошибка кодирования данных для CLI: {str(e)}")
-                return jsonify(
-                    {"error": f"Не удалось закодировать данные для CLI: {str(e)}"}
-                ), 500
-
         logger.info(
             f"Аутентификация для {user.username} c помощью Yandex завершена, отправка ответа в браузер"
         )
+
         return jsonify(response_data), 200
 
 
