@@ -1,36 +1,29 @@
-from urllib.parse import urlencode, parse_qs
-
+from datetime import datetime
 from authorization.auth import BaseAuthView
 from authorization.auth import auth_blueprint
-from authorization.google.services import get_user_by_email, create_user
+from authorization.oauth.google.services import (
+    get_device_login_record, request_device_login_details, poll_for_token,
+    get_or_create_user
+)
+from authorization.oauth.services import (
+    get_user_by_email, create_user, create_device_login_record,
+    delete_device_login_record
+)
 from init_oauth import google
 from signals import registration_user_signal
 from decorators import with_session
-from flask import url_for, make_response, jsonify, request, redirect
+from flask import url_for, make_response, jsonify, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
-
 from config import logger, GOOGLE_AUTH_URL
-from json import dumps
-import base64
 
 
 class GoogleLogin(MethodView):
     def get(self):
-        cli_redirect_uri = request.args.get("redirect_uri")
-
-        if not cli_redirect_uri:
-            logger.info(f"Запрос на авторизацию отправлен из браузера (не CLI)")
-        else:
-            logger.info(
-                f"Запрос на авторизацию через Google с CLI редиректом: {cli_redirect_uri}"
-            )
-
+        logger.info("Запрос на авторизацию через Google из браузера")
         redirect_uri = url_for("Auth.google_authorize", _external=True)
 
-        return google.authorize_redirect(
-            redirect_uri, state=urlencode({"cli_redirect": cli_redirect_uri})
-        )
+        return google.authorize_redirect(redirect_uri)
 
 
 class GoogleAuthorize(BaseAuthView):
@@ -82,8 +75,8 @@ class GoogleAuthorize(BaseAuthView):
             "username": user.username,
             "email": user.email,
             "currencies": {
-                "guild_rage": user.currencies.guild_rage if user.currencies else 0,
-                "gold": user.currencies.gold if user.currencies else 0
+                "guild_rage": user.currencies.guild_rage,
+                "gold": user.currencies.gold
             }
         }
 
@@ -94,7 +87,6 @@ class GoogleAuthorize(BaseAuthView):
         }
 
         response = make_response(response_data, 200)
-
         set_access_cookies(
             response,
             access_token,
@@ -105,35 +97,102 @@ class GoogleAuthorize(BaseAuthView):
             refresh_token,
             max_age=60 * 60 * 24 * 7
         )
-
-        state = request.args.get("state")
-        parsed = parse_qs(state)
-        cli_redirect = parsed.get("cli_redirect", [None])[0]
-
-        if cli_redirect and cli_redirect != "None":
-            try:
-                encoded = base64.urlsafe_b64encode(
-                    dumps(response_data).encode()
-                ).decode()
-                logger.info(
-                    "Перенаправление обратно в CLI с зашифрованными данными..."
-                )
-                return redirect(f"{cli_redirect}?data={encoded}")
-            except Exception as e:
-                logger.error(f"Ошибка кодирования данных для CLI: {str(e)}")
-                return jsonify(
-                    {"error": f"Не удалось закодировать данные для CLI: {str(e)}"}
-                ), 500
-
         logger.info(
             f"Аутентификация для {user.username} c помощью Google завершена, отправка ответа в браузер"
         )
+
         return jsonify(response_data), 200
 
 
 class GoogleAuthLink(MethodView):
     def get(self):
         return jsonify({"google_url": GOOGLE_AUTH_URL})
+
+
+class GoogleDeviceInit(BaseAuthView):
+    @with_session
+    def post(self, session_db):
+        logger.info("Запрос на получение кода устройства и прочих данных от Google")
+        response = request_device_login_details()
+
+        if response.status_code != 200:
+            logger.error("Детали для Google авторизации через устройство недоступны")
+            return jsonify(
+                {"error": "Device-based authentication is currently unavailable"}
+            ), 500
+
+        data = response.json()
+        create_device_login_record(session_db, data, "GOOGLE")
+        logger.info("Запись Google авторизации через устройство сохранена в БД")
+
+        return jsonify({
+            "user_code": data["user_code"],
+            "device_code": data["device_code"],
+            "verification_url": data["verification_url"],
+            "expires_in": data["expires_in"],
+            "interval": data["interval"]
+        })
+
+
+class GoogleDeviceCheck(BaseAuthView):
+    @with_session
+    def post(self, session_db):
+        device_code = request.json.get("device_code")
+        logger.info(f"Запрос токена по device_code: {device_code}")
+        login_record = get_device_login_record(session_db, device_code)
+
+        if not login_record:
+            logger.error("device_code код неверный")
+            return jsonify({"error": "Code is invalid"}), 400
+
+        if login_record.expires_at < datetime.utcnow():
+            logger.warning(
+                "Локально: срок действия device_code истёк, но отправляем запрос в Google"
+            )
+
+        response = poll_for_token(device_code)
+        response_data = response.json()
+        error = response_data.get("error")
+
+        if error == "authorization_pending":
+            logger.info("Ожидание авторизации пользователя")
+            return jsonify({"status": "pending"}), 428
+        elif error == "expired_token":
+            logger.warning("Код авторизации истёк")
+            delete_device_login_record(session_db, login_record)
+            return jsonify({"status": "expired"}), 400
+        elif error == "access_denied":
+            logger.warning("Пользователь отказался от авторизации")
+            delete_device_login_record(session_db, login_record)
+            return jsonify({"status": "denied"}), 400
+        elif error:
+            logger.error(f"Неизвестная ошибка: {error}")
+            delete_device_login_record(session_db, login_record)
+            return jsonify({"error": error}), 400
+
+        id_token = response_data.get("id_token")
+        if not id_token:
+            logger.error("Нет id_token в ответе Google")
+            return jsonify({"error": "No ID token provided"}), 400
+
+        user = get_or_create_user(session_db, id_token)
+        logger.info("Авторизация через устройство успешно подтверждена")
+        delete_device_login_record(session_db, login_record)
+
+        return jsonify({
+            "access_token": self._access_token(user),
+            "refresh_token": self._refresh_token(user),
+            "status": "authenticated",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "currencies": {
+                    "guild_rage": user.currencies.guild_rage,
+                    "gold": user.currencies.gold
+                }
+            }
+        })
 
 
 auth_blueprint.add_url_rule(
@@ -145,5 +204,14 @@ auth_blueprint.add_url_rule(
     view_func=GoogleAuthorize.as_view("google_authorize")
 )
 auth_blueprint.add_url_rule(
-    "/link/google", view_func=GoogleAuthLink.as_view("google_auth_link")
+    "/link/google",
+    view_func=GoogleAuthLink.as_view("google_auth_link")
+)
+auth_blueprint.add_url_rule(
+    "/google/device/init",
+    view_func=GoogleDeviceInit.as_view("google_device_init")
+)
+auth_blueprint.add_url_rule(
+    "/google/device/check",
+    view_func=GoogleDeviceCheck.as_view("google_device_check")
 )
