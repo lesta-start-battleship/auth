@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: API для регистрации, авторизации и работы с пользовательскими данными в игре "Морской бой"
-  version: 1.0.0
+
 paths:
   /api/v1/auth/registration/:
     post:
@@ -20,7 +20,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserRegResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User registered successfully, email confirmation required"
         400:
           description: Ошибка валидации данных
           content:
@@ -80,6 +84,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: "Invalid password"
+        403:
+          description: Email пользователя не подтвержден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User's email is not confirmed"
         404:
           description: Пользователь не найден
           content:
@@ -172,6 +184,59 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: "Internal server error"
+
+  /api/v1/auth/confirm_email/{code}:
+    get:
+      tags:
+        - Auth
+      operationId: Подтверждение email
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Код подтверждения
+          schema:
+            type: string
+      responses:
+        200:
+          description: Успешное подтверждение email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmEmailResponse'
+        400:
+          description: Неверный код подтверждения или код истек
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid code or code expired"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+        409:
+          description: Пользователь уже подтвержден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User already confirmed"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
+
 
   /api/v1/users/{user_id}:
     get:
@@ -559,10 +624,6 @@ components:
           example: https://domain.com/api/v1/auth/login/yandex
 
     UserLoginResponse:
-      schema:
-        $ref: '#/components/schemas/UserRegResponse'
-
-    UserRegResponse:
       type: object
       properties:
         access_token:
@@ -571,6 +632,12 @@ components:
         refresh_token:
           type: string
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+    ConfirmEmailResponse:
+      type: object
+      properties:
+        schema:
+          $ref: '#/components/schemas/UserLoginResponse'
 
     UserLoginRequest:
       type: object

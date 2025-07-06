@@ -17,7 +17,6 @@ logger.addHandler(console_handler)
 load_dotenv(override=True)
 
 FLASK_PORT = os.getenv("FLASK_PORT")
-FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
 
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -34,7 +33,6 @@ JWT_REFRESH_TOKEN_EXPIRES = os.getenv(
     "JWT_REFRESH_TOKEN_EXPIRES",
     timedelta(days=7)
 )
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")

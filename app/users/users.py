@@ -8,8 +8,6 @@ from config import logger, JWT_ACCESS_BLOCKLIST
 
 from decorators import with_session
 
-from signals import change_username_signal
-
 from pydantic import ValidationError
 
 from flask import make_response, request, jsonify, Blueprint
@@ -169,24 +167,29 @@ class UserView(BaseUserView):
 
             except ValidationError as e:
                 logger.error(
-                    f"Ошибка валидации данных {user_data}"
-                    f"для пользователя: {self.user_id}"
+                    f"Ошибка валидации данных "
+                    f"{user_data.model_dump(exclude={"password"})} "
+                    f"для пользователя: {self.user_id}: {e}"
                 )
                 self.handle_validation_errors(e)
 
             except SQLAlchemyError as e:
                 logger.error(
                     f"Ошибка при обновлении пользователя c id: {user_id} и "
-                    f"с данными: {user_data}: {e}"
+                    f"с данными: {user_data.model_dump(exclude={"password"})}"
+                    f": {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
 
         else:
             logger.error(
-                f"Ошибка валидации данных {user_data}"
+                f"Ошибка валидации данных "
+                f"{user_data.model_dump(exclude={"password"})}"
                 f"от пользователя: {self.user_id}"
             )
-            self.handle_validation_errors(user_data)
+            self.handle_validation_errors(
+                user_data.model_dump(exclude={"password"})
+            )
 
     @with_session
     @jwt_required()

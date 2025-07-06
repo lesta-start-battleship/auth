@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.0.0] - (2025-07-06)
+
+### Feat
+
+- feat(app): Change in registration logic
+
+    - Added signals to intercept new user registration and send a letter to the specified email
+    - Removed signals when registering and changing the username of the subsequent sending to the message queue
+    - Added a unified function for adding a message broker message when registering and changing a username
+
+- feat(containerization): Adding Kubernetes configuration
+    
+    - Deleted docker-compose and dockerfile
+    - Added k8s configuration
+
+- feat(jwt): Transition to **RS256 encryption keys**
+
+### BREAKING CHANGE
+
+- Now, when registering, a letter is send to the specified email, and when you click on the link, tokens are issued. Check api documentation for more details.
+
 ## [0.6.0] - (2025-07-04)
 
 ### Feat

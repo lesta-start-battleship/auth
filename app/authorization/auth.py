@@ -1,10 +1,11 @@
-from flask import make_response, request, Blueprint
+from flask import make_response, request, Blueprint, jsonify
 from flask.views import MethodView
 from typing import Dict
 from config import logger
 from errors import HttpError
 from decorators import with_session
 from signals import registration_user_signal
+from extensions import confirm_code_redis
 
 from authorization.services import get_user_by_username, create_user
 
@@ -48,7 +49,8 @@ class BaseAuthView(MethodView):
             identity=str(user.id),
             additional_claims={
                 "username": user.username,
-                "role": user.role.value
+                "role": user.role.value,
+                "is_active": user.is_active
             }
         )
 
@@ -63,7 +65,8 @@ class BaseAuthView(MethodView):
             identity=str(user.id),
             additional_claims={
                 "username": user.username,
-                "role": user.role.value
+                "role": user.role.value,
+                "is_active": user.is_active
             }
         )
 
@@ -109,9 +112,6 @@ class RegistrationView(BaseAuthView):
         :param user_data: данные пользователя в формате json
         :return: Dict[access_token: str, refresh_token: str] | HttpError
         """
-        logger.info(
-            f"Для регистрации пользователя приняты данные: {request.json}"
-        )
         validate_data = validate_schema(UserRegRequest, **request.json)
 
         if isinstance(validate_data, UserRegRequest):
@@ -122,42 +122,32 @@ class RegistrationView(BaseAuthView):
             try:
                 new_user = create_user(session_db, validate_data.model_dump())
 
-                # отправка сигнала о регистрации пользователя
+                # Сигнал о регистрации пользователя для отправки email
                 registration_user_signal.send(
                     self.__class__,
-                    user_id=new_user.id
-                )
-                access_token = self._access_token(new_user)
-                refresh_token = self._refresh_token(new_user)
-                response = make_response({
-                    "access_token": f"Bearer {access_token}",
-                    "refresh_token": f"Bearer {refresh_token}"
-                }, 201)
-
-                set_access_cookies(
-                    response,
-                    access_token,
-                    max_age=60*60*24
-                )
-                set_refresh_cookies(
-                    response,
-                    refresh_token,
-                    max_age=60*60*24*7
+                    username=new_user.username,
+                    email=new_user.email,
                 )
 
-                return response
+                return jsonify({
+                    "message": "User registered successfully, email confirmation required"
+                }), 201
 
             except SQLAlchemyError as e:
                 logger.error(
                     f"Ошибка при регистрации пользователя"
-                    f"с данными: {validate_data}: {e}"
+                    f"с данными: "
+                    f"{validate_data.model_dump(exclude={"password"})}: {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
         else:
             logger.error(
-                f"Ошибка валидации данных регистрации: {validate_data}"
+                f"Ошибка валидации данных регистрации: "
+                f"{validate_data.model_dump(exclude={"password"})}"
             )
-            self.handle_validation_errors(validate_data)
+            self.handle_validation_errors(
+                validate_data.model_dump(exclude={"password"})
+            )
 
 
 class LoginView(BaseAuthView):
@@ -173,7 +163,6 @@ class LoginView(BaseAuthView):
         :param user_data: username и password
         :return: Dict[access_token: str, refresh_token: str] | HttpError
         """
-        logger.info(f"Для входа пользователя приняты данные: {request.json}")
         validate_data = validate_schema(UserLoginRequest, **request.json)
 
         if isinstance(validate_data, UserLoginRequest):
@@ -182,6 +171,13 @@ class LoginView(BaseAuthView):
                 self.handle_error(HttpError, "User not found", 404)
 
             try:
+                if not user.is_active:
+                    self.handle_error(
+                        HttpError,
+                        "User's email is not confirmed",
+                        403
+                    )
+
                 if not check_password_hash(
                     user.h_password,
                     validate_data.password
@@ -212,14 +208,17 @@ class LoginView(BaseAuthView):
             except SQLAlchemyError as e:
                 logger.error(
                     f"Ошибка при входе пользователя с данными: "
-                    f"{validate_data}: {e}"
+                    f"{validate_data.model_dump(exclude={"password"})}: {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
         else:
             logger.error(
-                f"Ошибка валидации данных входа: {validate_data}"
+                f"Ошибка валидации данных входа: "
+                f"{validate_data.model_dump(exclude={"password"})}"
             )
-            self.handle_validation_errors(validate_data)
+            self.handle_validation_errors(
+                validate_data.model_dump(exclude={"password"})
+            )
 
 
 class RefreshView(BaseAuthView):
@@ -241,7 +240,8 @@ class RefreshView(BaseAuthView):
                     identity=get_jwt_identity(),
                     additional_claims={
                         "username": claims["username"],
-                        "role": claims["role"]
+                        "role": claims["role"],
+                        "is_active": claims["is_active"]
                     }
                 )
 
@@ -266,6 +266,66 @@ class RefreshView(BaseAuthView):
             self.handle_validation_errors(validate_data)
 
 
+class ConfirmEmailView(BaseAuthView):
+    """
+    Класс для подтверждения email
+    """
+
+    @with_session
+    def get(self, code: str, session_db: Session) -> Dict[str, str] | HttpError:
+        """
+        Подтверждение email
+
+        :param code: код подтверждения
+        :param session_db: сессия базы данных
+        :return: Dict[str, str] | HttpError
+        """
+
+        username = confirm_code_redis.get(code)
+        
+        if not username:
+            self.handle_error(HttpError, "Invalid code or code expired", 400)
+
+        try:
+            user = get_user_by_username(session_db, username)
+            if not user:
+                self.handle_error(HttpError, "User not found", 404)
+
+            if user.is_active:
+                self.handle_error(HttpError, "User already confirmed", 409)
+
+            user.is_active = True
+            session_db.commit()
+            session_db.refresh(user)
+
+            access_token = self._access_token(user)
+            refresh_token = self._refresh_token(user)
+
+            response = make_response({
+                "access_token": f"Bearer {access_token}",
+                "refresh_token": f"Bearer {refresh_token}"
+                }, 200)
+
+            set_access_cookies(
+                response,
+                access_token,
+                max_age=60*60*24
+            )
+            set_refresh_cookies(
+                response,
+                refresh_token,
+                max_age=60*60*24*7
+            )
+
+            return response
+
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Ошибка при подтверждении email: {e}"
+            )
+            self.handle_error(HttpError, "Internal server error", 500)
+
+
 auth_blueprint.add_url_rule(
     "/registration/",
     view_func=RegistrationView.as_view("registration")
@@ -277,4 +337,8 @@ auth_blueprint.add_url_rule(
 auth_blueprint.add_url_rule(
     "/refresh_token/",
     view_func=RefreshView.as_view("refresh")
+)
+auth_blueprint.add_url_rule(
+    "/confirm_email/<string:code>",
+    view_func=ConfirmEmailView.as_view("confirm_email")
 )
