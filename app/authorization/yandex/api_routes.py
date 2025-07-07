@@ -43,6 +43,7 @@ class YandexLogin(MethodView):
             params["state"] = state
 
         auth_url = f"https://oauth.yandex.ru/authorize?{urlencode(params)}"
+
         return redirect(auth_url)
 
 
@@ -52,6 +53,7 @@ class YandexAuthorize(BaseAuthView):
         code = request.args.get('code')
 
         if not code:
+
             logger.error("Не получен код авторизации от Yandex")
             return jsonify(
                 {"error": "Авторизация не удалась, код от Yandex не получен"}
@@ -95,6 +97,7 @@ class YandexAuthorize(BaseAuthView):
 
         if not user:
             logger.info(f"Создание нового пользователя с данными из Yandex")
+
             user = create_user(
                 session_db,
                 email=email,
@@ -102,6 +105,7 @@ class YandexAuthorize(BaseAuthView):
                 surname=surname,
                 username=email.split("@")[0]
             )
+
         else:
             logger.info(f"Пользователь Yandex найден: {user.username}")
 
@@ -109,6 +113,7 @@ class YandexAuthorize(BaseAuthView):
                 self.__class__,
                 user_id=user.id
             )
+
 
         access_token = self._access_token(user)
         refresh_token = self._refresh_token(user)
@@ -147,6 +152,7 @@ class YandexAuthorize(BaseAuthView):
         cli_redirect = parsed.get("cli_redirect", [None])[0]
 
         if cli_redirect:
+
             try:
                 encoded = base64.urlsafe_b64encode(
                     dumps(response_data).encode()
@@ -173,6 +179,7 @@ class YandexAuthLink(MethodView):
         return jsonify({"yandex_url": YANDEX_AUTH_URL})
 
 
+
 auth_blueprint.add_url_rule(
     "/login/yandex",
     view_func=YandexLogin.as_view("yandex_login")
@@ -181,6 +188,7 @@ auth_blueprint.add_url_rule(
     "/yandex/callback",
     view_func=YandexAuthorize.as_view("yandex_authorize")
 )
+
 auth_blueprint.add_url_rule(
     "/link/yandex", view_func=YandexAuthLink.as_view("yandex_auth_link")
 )

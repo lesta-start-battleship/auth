@@ -5,7 +5,6 @@ from flask_mail import Message
 
 registration_user_signal = Namespace().signal("registration-user")
 
-
 def user_registered_handler(sender, **kwargs):
     """
     Обработчик сигнала регистрации пользователя
@@ -31,3 +30,4 @@ def user_registered_handler(sender, **kwargs):
         "Команда игры Морской бой"
     )
     mail.send(msg)
+    

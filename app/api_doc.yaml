@@ -237,7 +237,6 @@ paths:
               example:
                 error: "Internal server error"
 
-
   /api/v1/users/{user_id}:
     get:
       tags:
@@ -323,6 +322,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
               example:
                 error: "Invalid data"
         401:
@@ -638,7 +638,6 @@ components:
       properties:
         schema:
           $ref: '#/components/schemas/UserLoginResponse'
-
     UserLoginRequest:
       type: object
       properties:

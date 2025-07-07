@@ -90,6 +90,7 @@ class BaseUserView(MethodView):
         """
         raise HttpError(
             400,
+
             f"{error_validation_data[0]['msg']}"
         )
 
@@ -156,6 +157,7 @@ class UserView(BaseUserView):
                     self.handle_error(HttpError, "User not found", 404)
 
                 response_data = GetUserResponse.model_validate(user)
+
                 if user_data.username:
                     change_username_signal.send(
                         self.__class__,
@@ -183,6 +185,7 @@ class UserView(BaseUserView):
 
         else:
             logger.error(
+
                 f"Ошибка валидации данных "
                 f"{user_data.model_dump(exclude={"password"})}"
                 f"от пользователя: {self.user_id}"
@@ -239,6 +242,7 @@ class GetUsersListResource(BaseUserView):
 
             try:
                 users = get_users(session_db, validate_users_ids.user_ids)
+
                 if users is None:
                     self.handle_error(HttpError, "Users not found", 404)
 

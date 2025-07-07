@@ -9,7 +9,6 @@ from decorators import with_session
 from flask import url_for, make_response, jsonify, request, redirect
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
-
 from config import logger, GOOGLE_AUTH_URL
 from json import dumps
 import base64
@@ -18,6 +17,7 @@ import base64
 class GoogleLogin(MethodView):
     def get(self):
         cli_redirect_uri = request.args.get("redirect_uri")
+
 
         if not cli_redirect_uri:
             logger.info("Запрос на авторизацию отправлен из браузера (не CLI)")
@@ -66,6 +66,7 @@ class GoogleAuthorize(BaseAuthView):
                 surname=user_info.get("family_name"),
                 username=email.split('@')[0]
             )
+
         else:
             logger.info(f"Пользователь Google найден: {user.username}")
 
@@ -140,10 +141,12 @@ auth_blueprint.add_url_rule(
     "/login/google",
     view_func=GoogleLogin.as_view("google_login")
 )
+
 auth_blueprint.add_url_rule(
     "/google/callback",
     view_func=GoogleAuthorize.as_view("google_authorize")
 )
+
 auth_blueprint.add_url_rule(
     "/link/google", view_func=GoogleAuthLink.as_view("google_auth_link")
 )

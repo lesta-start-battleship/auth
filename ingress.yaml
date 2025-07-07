@@ -1,0 +1,59 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+<<<<<<< HEAD
+  name: main-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/auth-jwt: "true"
+    nginx.ingress.kubernetes.io/auth-jwt-secret: jwt-secret
+    nginx.ingress.kubernetes.io/auth-jwt-key: key
+    nginx.ingress.kubernetes.io/auth-jwt-algorithm: HS256
+    nginx.ingress.kubernetes.io/auth-jwt-token-header: Authorization
+    nginx.ingress.kubernetes.io/auth-jwt-set-headers: "x-user: $jwt_claim_user"
+
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /apidocs
+=======
+  name: auth-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/auth-jwt-secret: jwt-secret
+    nginx.ingress.kubernetes.io/auth-jwt-verify-key: "key"
+    nginx.ingress.kubernetes.io/auth-jwt-login-redirect: "http://$host/auth/login"
+    
+    nginx.ingress.kubernetes.io/auth-jwt-verify-off: "false"
+    nginx.ingress.kubernetes.io/auth-jwt-require: '{"any": true}'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: auth.local
+    http:
+      paths:
+      - path: /auth/login
+>>>>>>> 29fd088a869478338fb8041a29f4c63f7541b6c8
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 80
+<<<<<<< HEAD
+  - http:
+      paths:
+      - path: /
+=======
+      - path: /protected
+>>>>>>> 29fd088a869478338fb8041a29f4c63f7541b6c8
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+<<<<<<< HEAD
+              number: 80
+=======
+              number: 80
+>>>>>>> 29fd088a869478338fb8041a29f4c63f7541b6c8

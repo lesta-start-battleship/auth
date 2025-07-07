@@ -1,7 +1,5 @@
 import os
-
 from datetime import datetime, timezone, timedelta
-
 from config import FLASK_PORT
 from authorization.auth import auth_blueprint
 from authorization.google import api_routes # noqa
@@ -16,7 +14,6 @@ from errors import HttpError
 from signals import (
     user_registered_handler, registration_user_signal,
 )
-
 from flask import Flask, Response, jsonify
 from flasgger import Swagger
 from flask_jwt_extended import JWTManager

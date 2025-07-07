@@ -121,7 +121,6 @@ class RegistrationView(BaseAuthView):
 
             try:
                 new_user = create_user(session_db, validate_data.model_dump())
-
                 # Сигнал о регистрации пользователя для отправки email
                 registration_user_signal.send(
                     self.__class__,
@@ -219,7 +218,6 @@ class LoginView(BaseAuthView):
             self.handle_validation_errors(
                 validate_data.model_dump(exclude={"password"})
             )
-
 
 class RefreshView(BaseAuthView):
 
@@ -326,6 +324,7 @@ class ConfirmEmailView(BaseAuthView):
             self.handle_error(HttpError, "Internal server error", 500)
 
 
+
 auth_blueprint.add_url_rule(
     "/registration/",
     view_func=RegistrationView.as_view("registration")
@@ -338,6 +337,7 @@ auth_blueprint.add_url_rule(
     "/refresh_token/",
     view_func=RefreshView.as_view("refresh")
 )
+
 auth_blueprint.add_url_rule(
     "/confirm_email/<string:code>",
     view_func=ConfirmEmailView.as_view("confirm_email")
