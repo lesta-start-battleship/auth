@@ -34,7 +34,7 @@ def process_compensation(
         currency.value,
         getattr(user_currency, currency.value) + amount
     )
-    transaction.status = TransactionStatus.FAILED
+    transaction.status = TransactionStatus.COMPLETED
     session_db.commit()
 
 
