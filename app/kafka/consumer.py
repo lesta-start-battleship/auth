@@ -3,8 +3,10 @@ import json
 from confluent_kafka import Consumer
 from database.database import session
 from config import logger, KAFKA_ADDRESS
-from kafka.handlers.balance_reserve import handle_balance_reserve
-from kafka.handlers.balance_compensate import handle_balance_compensate
+from kafka.handlers.shop.balance_reserve import handle_balance_reserve
+from kafka.handlers.shop.balance_compensate import handle_balance_compensate
+from kafka.handlers.guild.guild_war_declare import handle_guild_war_declare
+from kafka.handlers.guild.guild_war_compensate import handle_guild_war_compensate
 
 
 def start_consumer_loop() -> None:
@@ -15,7 +17,9 @@ def start_consumer_loop() -> None:
     })
     consumer.subscribe([
         "shop.balance.reserve.request.auth",
-        "shop.balance.compensate.request.auth"
+        "shop.balance.compensate.request.auth",
+        "initiator_guild_wants_declare_war",
+        "guild_war_canceled_declined_expired"
     ])
 
     logger.info("[Kafka Консьюмер] Запущен обработчик транзакций...")
@@ -65,6 +69,16 @@ def start_consumer_loop() -> None:
                     "[Kafka Консьюмер] Обработка запроса на компенсацию баланса от shop"
                 )
                 handle_balance_compensate(db, data)
+            elif topic == "initiator_guild_wants_declare_war":
+                logger.info(
+                    "[Kafka Консьюмер] Обработка запроса разрещение объявления войны гильдий от guilds"
+                )
+                handle_guild_war_declare(db, data)
+            elif topic == "guild_war_canceled_declined_expired":
+                logger.info(
+                    "[Kafka Консьюмер] Обработка запроса на компенсацию баланса от guilds"
+                )
+                handle_guild_war_compensate(db, data)
             else:
                 logger.warning(f"[Kafka Консьюмер] Неизвестный топик: {topic}")
         except Exception as e:
