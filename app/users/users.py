@@ -169,8 +169,8 @@ class UserView(BaseUserView):
 
             except ValidationError as e:
                 logger.error(
-                    f"Ошибка валидации данных "
-                    f"{user_data.model_dump(exclude={"password"})} "
+                    "Ошибка валидации данных "
+                    f"{user_data.model_dump(exclude={'password'})} "
                     f"для пользователя: {self.user_id}: {e}"
                 )
                 self.handle_validation_errors(e)
@@ -178,16 +178,15 @@ class UserView(BaseUserView):
             except SQLAlchemyError as e:
                 logger.error(
                     f"Ошибка при обновлении пользователя c id: {user_id} и "
-                    f"с данными: {user_data.model_dump(exclude={"password"})}"
+                    f"с данными: {user_data.model_dump(exclude={'password'})}"
                     f": {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
 
         else:
             logger.error(
-
-                f"Ошибка валидации данных "
-                f"{user_data.model_dump(exclude={"password"})}"
+                "Ошибка валидации данных "
+                f"{user_data.model_dump(exclude={'password'})}"
                 f"от пользователя: {self.user_id}"
             )
             self.handle_validation_errors(

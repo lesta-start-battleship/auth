@@ -134,18 +134,18 @@ class RegistrationView(BaseAuthView):
 
             except SQLAlchemyError as e:
                 logger.error(
-                    f"Ошибка при регистрации пользователя"
-                    f"с данными: "
-                    f"{validate_data.model_dump(exclude={"password"})}: {e}"
+                    "Ошибка при регистрации пользователя"
+                    "с данными: "
+                    f"{validate_data.model_dump(exclude={'password'})}: {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
         else:
             logger.error(
-                f"Ошибка валидации данных регистрации: "
-                f"{validate_data.model_dump(exclude={"password"})}"
+                "Ошибка валидации данных регистрации: "
+                f"{validate_data.model_dump(exclude={'password'})}"
             )
             self.handle_validation_errors(
-                validate_data.model_dump(exclude={"password"})
+                validate_data.model_dump(exclude={'password'})
             )
 
 
@@ -206,17 +206,17 @@ class LoginView(BaseAuthView):
 
             except SQLAlchemyError as e:
                 logger.error(
-                    f"Ошибка при входе пользователя с данными: "
-                    f"{validate_data.model_dump(exclude={"password"})}: {e}"
+                    "Ошибка при входе пользователя с данными: "
+                    f"{validate_data.model_dump(exclude={'password'})}: {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
         else:
             logger.error(
-                f"Ошибка валидации данных входа: "
-                f"{validate_data.model_dump(exclude={"password"})}"
+                "Ошибка валидации данных входа: "
+                f"{validate_data.model_dump(exclude={'password'})}"
             )
             self.handle_validation_errors(
-                validate_data.model_dump(exclude={"password"})
+                validate_data.model_dump(exclude={'password'})
             )
 
 class RefreshView(BaseAuthView):
