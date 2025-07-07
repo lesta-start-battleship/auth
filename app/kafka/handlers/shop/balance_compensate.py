@@ -52,7 +52,7 @@ def handle_balance_compensate(db: Session, msg: dict[str, str | int]) -> None:
         )
         return None
 
-    transaction = get_user_transaction(db, transaction_id, user_id)
+    transaction = get_user_transaction(db, f"shop:" + transaction_id, user_id)
     if not transaction:
         logger.warning(
             f"[Обработчик] Транзакция {transaction_id} не найдена для пользователя {user_id}"

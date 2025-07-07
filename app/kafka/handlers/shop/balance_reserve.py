@@ -36,7 +36,7 @@ def handle_balance_reserve(db: Session, msg: dict[str, str | int]) -> None:
 
     if not user_exists(db, user_id):
         logger.warning(
-            f"[Обработчик] Пользователь {user_id} не существует, транзакция пропускаетсяя"
+            f"[Обработчик] Пользователь {user_id} не существует, транзакция пропускается"
         )
         send_message_to_kafka(
             topic="auth.balance.reserve.response.shop",
@@ -55,7 +55,7 @@ def handle_balance_reserve(db: Session, msg: dict[str, str | int]) -> None:
         f"[Обработчик] Получена информация о валюте пользователя {user_id}: {user_currency}"
     )
     transaction = create_user_transaction_object(
-        transaction_id, user_id, currency, amount, TransactionStatus.PENDING
+        f"shop:" + transaction_id, user_id, currency, amount, TransactionStatus.PENDING
     )
     logger.info(f"[Обработчик] Создан объект транзакции: {transaction}")
 

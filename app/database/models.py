@@ -106,7 +106,7 @@ class UserTransaction(Base):
     __tablename__ = "user_transactions"
 
     transaction_id: Mapped[str] = mapped_column(
-        String(36),
+        String(64),
         unique=True,
         nullable=False
     )
