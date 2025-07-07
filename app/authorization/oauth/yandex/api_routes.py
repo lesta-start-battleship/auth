@@ -249,7 +249,7 @@ class YandexDeviceCheck(BaseAuthView):
                     "gold": user.currencies.gold
                 }
             }
-        })
+        }), 200
 
 
 auth_blueprint.add_url_rule(

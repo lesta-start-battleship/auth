@@ -96,7 +96,7 @@ class GoogleAuthorize(BaseAuthView):
 
 class GoogleAuthLink(MethodView):
     def get(self):
-        return jsonify({"google_url": GOOGLE_AUTH_URL})
+        return jsonify({"google_url": GOOGLE_AUTH_URL}), 200
 
 
 class GoogleDeviceInit(BaseAuthView):
@@ -121,7 +121,7 @@ class GoogleDeviceInit(BaseAuthView):
             "verification_url": data["verification_url"],
             "expires_in": data["expires_in"],
             "interval": data["interval"]
-        })
+        }), 200
 
 
 class GoogleDeviceCheck(BaseAuthView):
@@ -163,7 +163,7 @@ class GoogleDeviceCheck(BaseAuthView):
         id_token = response_data.get("id_token")
         if not id_token:
             logger.error("Нет id_token в ответе Google")
-            return jsonify({"error": "No ID token provided"}), 400
+            return jsonify({"error": "No ID token provided"}), 502
 
         user = get_or_create_user(session_db, id_token)
         logger.info("Авторизация через устройство успешно подтверждена")
@@ -182,7 +182,7 @@ class GoogleDeviceCheck(BaseAuthView):
                     "gold": user.currencies.gold
                 }
             }
-        })
+        }), 200
 
 
 auth_blueprint.add_url_rule(
