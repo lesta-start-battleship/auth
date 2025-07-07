@@ -98,30 +98,149 @@ paths:
                   error: "Internal server error"
 
   /api/v1/auth/link/google:
-      get:
-        tags:
-          - Auth
-        operationId: Ссылка на авторизацию пользователя через Google
-        responses:
-          200:
-            description: Успешное получение ссылки на авторизацию
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/UserGoogleLoginResponse'
+    get:
+      tags:
+        - Auth
+      operationId: getGoogleAuthLink
+      summary: Получение демо-ссылки для авторизации через Google
+      description: ⚠️ Этот эндпоинт используется **для демонстрационных целей**, чтобы показать процесс авторизации через Google. Он предоставляет ссылку, по которой можно пройти Google OAuth-авторизацию в браузере.
+      responses:
+        200:
+          description: Успешное получение ссылки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGoogleLoginResponse'
 
   /api/v1/auth/link/yandex:
     get:
       tags:
         - Auth
-      operationId: Ссылка на авторизацию пользователя через Yandex
+      operationId: getYandexAuthLink
+      summary: Получение демо-ссылки для авторизации через Yandex
+      description: ⚠️ Этот эндпоинт используется **для демонстрационных целей**, чтобы показать процесс авторизации через Yandex. Он предоставляет ссылку, по которой можно пройти Yandex OAuth-авторизацию в браузере.
       responses:
         200:
-          description: Успешное получение ссылки на авторизацию
+          description: Успешное получение ссылки
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserYandexLoginResponse'
+
+  /api/v1/auth/yandex/device/init:
+    post:
+      tags:
+        - Auth
+      operationId: initYandexDeviceLogin
+      summary: Инициализация Yandex авторизации через устройство
+      description: Этот эндпоинт инициирует процесс авторизации через устройство для пользователей Yandex. Он возвращает `device_code`, ссылку для авторизации (`verification_url`), время жизни кода (`expires_in`) и интервал (`interval`) для последующих проверок. Пользователь должен перейти по verification_url и авторизоваться.
+      responses:
+        200:
+          description: Успешная инициализация авторизации через устройство
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YandexDeviceInitResponse'
+
+  /api/v1/auth/yandex/device/check:
+    post:
+      tags:
+        - Auth
+      operationId: checkYandexDeviceLogin
+      summary: Проверка статуса Yandex авторизации через устройство
+      description: >
+        Клиент (в нашем случае CLI) отправляет `device_code`, чтобы узнать статус авторизации текущего пользователя через Yandex. 
+        Возможные ответы: `authenticated` (авторизация прошла успешно, возвращаются токены и данные пользователя), `pending` (пользователь еще не завершил авторизацию), `expired` (время действия кода авторизации истекло), `error` (код неверный или отсутствует).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YandexDeviceCheckRequest'
+      responses:
+        200:
+          description: Авторизация успешно подтверждена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YandexDeviceCheckResponseSuccess'
+        400:
+          description: Неверный или истекший device_code (или вовсе отсутствует)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YandexDeviceCheckResponseError'
+        428:
+          description: Авторизация еще не завершена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YandexDeviceCheckResponsePending'
+
+  /api/v1/auth/google/device/init:
+    post:
+      tags:
+        - Auth
+      operationId: initGoogleDeviceLogin
+      summary: Инициализация Google авторизации через устройство
+      description: Этот эндпоинт инициирует процесс авторизации через устройство для пользователей Google. Он возвращает `device_code`, `user_code`, ссылку для авторизации (verification_url), время жизни кода (`expires_in`) и интервал (`interval`) для последующих проверок. Пользователь должен перейти по verification_url и авторизоваться.
+      responses:
+        200:
+          description: Успешная инициализация авторизации через устройство
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleDeviceInitResponse'
+        500:
+          description: Google не вернул необходимые данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Device-based authentication is currently unavailable"
+
+  /api/v1/auth/google/device/check:
+    post:
+      tags:
+        - Auth
+      operationId: checkGoogleDeviceLogin
+      summary: Проверка статуса Google авторизации через устройство
+      description: >
+        Клиент (в нашем случае CLI) отправляет `device_code`, чтобы узнать статус авторизации текущего пользователя через Google.  
+        Возможные ответы: `authenticated` (авторизация прошла успешно, возвращаются токены и данные пользователя), `pending` (пользователь еще не завершил авторизацию), `expired` (время действия кода авторизации истекло), `denied` (пользователь отказался от авторизации), `error` (код неверный или отсутствует).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleDeviceCheckRequest'
+      responses:
+        200:
+          description: Авторизация успешно подтверждена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleDeviceCheckResponseSuccess'
+        400:
+          description: Неверный код, его срок действия истек, или пользователь отказался от авторизации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleDeviceCheckResponseError'
+        428:
+          description: Авторизация еще не завершена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleDeviceCheckResponsePending'
+
+        502:
+          description: Нет id_token в ответе от Google
+          content:
+            application/json:
+              example:
+                error: "No ID token provided"
 
   /api/v1/auth/refresh_token/:
     post:
@@ -458,6 +577,8 @@ components:
 
     UserGoogleLoginResponse:
       type: object
+      required:
+        - google_url
       properties:
         google_link:
           type: string
@@ -465,10 +586,179 @@ components:
 
     UserYandexLoginResponse:
       type: object
+      required:
+        - yandex_link
       properties:
         yandex_link:
           type: string
           example: https://domain.com/api/v1/auth/login/yandex
+
+    YandexDeviceInitResponse:
+      type: object
+      required:
+        - device_code
+        - verification_url
+        - expires_in
+        - interval
+      properties:
+        device_code:
+          type: string
+          example: "9a8f3c6a7e1d4c5fbf5c91d45831e8c7"
+        verification_url:
+          type: string
+          example: "https://oauth.yandex.ru/authorize?device_code=xyz..."
+        expires_in:
+          type: integer
+          example: 600
+        interval:
+          type: integer
+          example: 5
+
+    YandexDeviceCheckRequest:
+      type: object
+      required:
+        - device_code
+      properties:
+        device_code:
+          type: string
+          example: "9a8f3c6a7e1d4c5fbf5c91d45831e8c7"
+
+    YandexDeviceCheckResponseSuccess:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - status
+        - user
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        status:
+          type: string
+          example: "authenticated"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            username:
+              type: string
+              example: "Nagibator2000"
+            email:
+              type: string
+              example: "user@example.com"
+            currencies:
+              type: object
+              properties:
+                guild_rage:
+                  type: integer
+                  example: 15
+                gold:
+                  type: integer
+                  example: 100
+
+    YandexDeviceCheckResponseError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Code is invalid"
+        status:
+          type: string
+          example: "error"
+
+    YandexDeviceCheckResponsePending:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "pending"
+
+    GoogleDeviceInitResponse:
+      type: object
+      required:
+        - device_code
+        - user_code
+        - verification_url
+        - expires_in
+        - interval
+      properties:
+        device_code:
+          type: string
+          example: "AH-1Ng1oKcVYT97I0FQGmLOuyjDiOZWX467jCrtWNMkp_HS-EyxrMbOsjdCMuzQsAK2ZDurPpdYVZBPuIrmUeAYpHIHwunluTA"
+        user_code:
+          type: string
+          example: "MCC-ZBZ-HDX"
+        verification_url:
+          type: string
+          example: "https://www.google.com/device"
+        expires_in:
+          type: integer
+          example: 1800
+        interval:
+          type: integer
+          example: 5
+
+    GoogleDeviceCheckRequest:
+      type: object
+      required:
+        - device_code
+      properties:
+        device_code:
+          type: string
+          example: "MCC-ZBZ-HDX"
+
+    GoogleDeviceCheckResponseSuccess:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - status
+        - user
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        status:
+          type: string
+          example: "authenticated"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            email:
+              type: string
+            currencies:
+              type: object
+              properties:
+                guild_rage:
+                  type: integer
+                gold:
+                  type: integer
+
+    GoogleDeviceCheckResponseError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Code is invalid"
+        status:
+          type: string
+          example: "denied"
+
+    GoogleDeviceCheckResponsePending:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "pending"
 
     UserLoginResponse:
       schema:
