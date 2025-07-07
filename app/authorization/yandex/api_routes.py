@@ -6,7 +6,7 @@ from authorization.auth import auth_blueprint
 from authorization.google.services import get_user_by_email, create_user
 from config import YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET
 from decorators import with_session
-from signals import registration_user_signal
+# from signals import registration_user_signal
 from flask import url_for, make_response, jsonify, redirect, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
@@ -76,10 +76,10 @@ class YandexAuthorize(BaseAuthView):
                 username=email.split("@")[0]
             )
 
-            registration_user_signal.send(
-                self.__class__,
-                user_id=user.id
-            )
+            # registration_user_signal.send(
+            #     self.__class__,
+            #     user_id=user.id
+            # )
 
         access_token = self._access_token(user)
         refresh_token = self._refresh_token(user)

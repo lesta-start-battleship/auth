@@ -4,7 +4,7 @@ from typing import Dict
 from config import logger
 from errors import HttpError
 from decorators import with_session
-from signals import registration_user_signal
+# from signals import registration_user_signal
 
 from authorization.services import get_user_by_username, create_user
 
@@ -92,8 +92,8 @@ class BaseAuthView(MethodView):
         """
         raise HttpError(
             400,
-            f"{error_validation_data[0]["loc"][0]}:"
-            f"{error_validation_data[0]["msg"]}"
+            f"{error_validation_data[0]['loc'][0]}:"
+            f"{error_validation_data[0]['msg']}"
         )
 
 
@@ -124,10 +124,10 @@ class RegistrationView(BaseAuthView):
                 new_user = create_user(session_db, validate_data.model_dump())
 
                 # отправка сигнала о регистрации пользователя
-                registration_user_signal.send(
-                    self.__class__,
-                    user_id=new_user.id
-                )
+                # registration_user_signal.send(
+                #     self.__class__,
+                #     user_id=new_user.id
+                # )
                 access_token = self._access_token(new_user)
                 refresh_token = self._refresh_token(new_user)
                 response = make_response({

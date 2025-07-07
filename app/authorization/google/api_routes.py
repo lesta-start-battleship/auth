@@ -4,7 +4,7 @@ from authorization.auth import BaseAuthView
 from authorization.auth import auth_blueprint
 from authorization.google.services import get_user_by_email, create_user
 from config import google
-from signals import registration_user_signal
+# from signals import registration_user_signal
 from decorators import with_session
 from flask import url_for, make_response, jsonify, request, redirect
 from flask.views import MethodView
@@ -41,10 +41,10 @@ class GoogleAuthorize(BaseAuthView):
                 username=email.split('@')[0]
             )
 
-            registration_user_signal.send(
-                self.__class__,
-                user_id=user.id
-            )
+            # registration_user_signal.send(
+            #     self.__class__,
+            #     user_id=user.id
+            # )
 
         access_token = self._access_token(user)
         refresh_token = self._refresh_token(user)

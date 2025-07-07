@@ -2,8 +2,8 @@ from blinker import Namespace
 from kafka.kafka import send_kafka
 
 
-registration_user_signal = Namespace().signal("registration-user")
-change_username_signal = Namespace().signal("change-username")
+# registration_user_signal = Namespace().signal("registration-user")
+# change_username_signal = Namespace().signal("change-username")
 
 
 def user_registered_handler(sender, **kwargs):
