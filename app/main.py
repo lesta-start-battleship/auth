@@ -1,19 +1,19 @@
+import os
 from datetime import datetime, timezone, timedelta
-
+from config import FLASK_PORT
 from authorization.auth import auth_blueprint
 from authorization.google import api_routes # noqa
 from authorization.yandex import api_routes # noqa
 
 from users.users import user_blueprint
+from currencies.routs import currencies_blueprint
 
-from extensions import jwt_redis_blocklist, oauth
+from extensions import jwt_redis_blocklist, oauth, mail
 
 from errors import HttpError
-# from signals import (
-#     user_registered_handler, registration_user_signal,
-#     change_username_handler, change_username_signal
-# )
-
+from signals import (
+    user_registered_handler, registration_user_signal,
+)
 from flask import Flask, Response, jsonify
 from flasgger import Swagger
 from flask_jwt_extended import JWTManager
@@ -27,30 +27,45 @@ from flask_jwt_extended import (
 from config import (
     JWT_ACCESS_TOKEN_EXPIRES,
     JWT_REFRESH_TOKEN_EXPIRES,
-    FLASK_SECRET_KEY,
-    JWT_SECRET_KEY,
-    logger
+    logger,
+    FLASK_PORT,
+    VERSION
 )
 
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = FLASK_SECRET_KEY
-app.config["SWAGGER"] = {"openapi": "3.0.0",}
+with open("jwt_private_key", "r") as f:
+    app.config["JWT_PRIVATE_KEY"] = f.read()
+
+with open("jwt_pub_key.pub", "r") as f:
+    app.config["JWT_PUBLIC_KEY"] = f.read()
+
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
+app.config["SWAGGER"] = {"openapi": "3.0.0", "version": VERSION}
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = JWT_ACCESS_TOKEN_EXPIRES
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
-app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
+app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_COOKIE_SECURE"] = True
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 
-# registration_user_signal.connect(user_registered_handler)
-# change_username_signal.connect(change_username_handler)
+app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"] = os.getenv("MAIL_PORT")
+app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
+app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
+app.config["MAIL_USE_TLS"] = False
+app.config["MAIL_USE_SSL"] = True
+
+registration_user_signal.connect(user_registered_handler)
 
 app.register_blueprint(auth_blueprint, url_prefix="/api/v1/auth")
 app.register_blueprint(user_blueprint, url_prefix="/api/v1/users")
+app.register_blueprint(currencies_blueprint, url_prefix="/api/v1/currencies")
 
 swagger = Swagger(app, template_file="api_doc.yaml")
 jwt = JWTManager(app)
+mail.init_app(app)
 oauth.init_app(app)
 
 
@@ -110,4 +125,4 @@ def refresh_expiring_jwts(response: Response):
 
 if __name__ == "__main__":
     # Thread(target=start_kafka_consumer, daemon=True).start()
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=FLASK_PORT)

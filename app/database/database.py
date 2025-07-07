@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 DSN = (
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
-    f"localhost:5432/{POSTGRES_DB}"
+    f"postgres:5432/{POSTGRES_DB}"
 )
 
 engine = create_engine(DSN)

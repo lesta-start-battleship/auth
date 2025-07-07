@@ -1,40 +1,33 @@
+import uuid
 from blinker import Namespace
-from kafka.kafka import send_kafka
+from extensions import mail, confirm_code_redis
+from flask_mail import Message
 
-
-# registration_user_signal = Namespace().signal("registration-user")
-# change_username_signal = Namespace().signal("change-username")
-
+registration_user_signal = Namespace().signal("registration-user")
 
 def user_registered_handler(sender, **kwargs):
     """
     Обработчик сигнала регистрации пользователя
     """
-    user_id = kwargs.get("user_id")
-
-    send_kafka(
-        "inventory-new-user",
-        {
-            "message": "New user registered",
-            "user_id": user_id
-        }
-    )
-
-
-def change_username_handler(sender, **kwargs):
-    """
-    Обработчик сигнала изменения имени пользователя
-    """
-    user_id = kwargs.get("user_id")
+    confirm_code = str(uuid.uuid4())
     username = kwargs.get("username")
+    email = kwargs.get("email")
 
-    send_kafka(
-        "Какие-то топики кому нужно",
-        {
-            "message": "Username changed",
-            "user_id": user_id,
-            "username": username
-        }
+    confirm_code_redis.set(confirm_code, username, ex=60*5)
+
+    msg = Message(
+        "Подтверждение почты при регистрации",
+        recipients=[email]
     )
-
-
+    msg.body = (
+        f"Здравствуйте, {username}!\n\n"
+        "Спасибо за регистрацию.\n"
+        "Чтобы активировать вашу учетную запись, "
+        "пожалуйста, подтвердите свой адрес электронной почты, "
+        "перейдя по следующей ссылке:\n\n"
+        f"http://127.0.0.1/api/v1/auth/confirm_email/{confirm_code}\n\n"
+        "С уважением,\n"
+        "Команда игры Морской бой"
+    )
+    mail.send(msg)
+    

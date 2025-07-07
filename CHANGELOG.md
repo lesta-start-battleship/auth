@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org).
 
 ---
+## [1.0.0] - (2025-07-06)
+
+### Feat
+
+- feat(app): Change in registration logic
+
+    - Added signals to intercept new user registration and send a letter to the specified email
+    - Removed signals when registering and changing the username of the subsequent sending to the message queue
+    - Added a unified function for adding a message broker message when registering and changing a username
+
+- feat(containerization): Adding Kubernetes configuration
+    
+    - Deleted docker-compose and dockerfile
+    - Added k8s configuration
+
+- feat(jwt): Transition to **RS256 encryption keys**
+
+### BREAKING CHANGE
+
+- Now, when registering, a letter is send to the specified email, and when you click on the link, tokens are issued. Check api documentation for more details.
+
+## [0.6.0] - (2025-07-04)
+
+### Feat
+
+- feat(app): Adding Orchestration and Containerization
+
+    - Adding docker-compose and dockerfile
+    - Adding missing files when switching to another branch
+
+
+## [0.5.0] - (2025-07-03)
+
+### Feat
+
+- feat(app): Adding the ability to work with user currency
+
+    - Adding currencies routes, services, schemas, models and views
+
+- fix(app): Changing the response validation logic in the users and auth routes
 
 ## [0.4.2] - (2025-07-02)
 

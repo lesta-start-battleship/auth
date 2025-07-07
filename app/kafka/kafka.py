@@ -7,7 +7,7 @@ from database.models import (
     UserCurrency, UserTransaction, CurrencyType, TransactionStatus
 )
 
-producer = Producer({'bootstrap.servers': 'localhost:9092'})
+producer = Producer({'bootstrap.servers': 'kafka:9092'}) # Сделать их конфигурируемыми, перенеся в .env(?)
 
 
 def send_kafka(topic: str, payload: dict):

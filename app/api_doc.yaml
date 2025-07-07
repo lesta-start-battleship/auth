@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: API для регистрации, авторизации и работы с пользовательскими данными в игре "Морской бой"
-  version: 1.0.0
+
 paths:
   /api/v1/auth/registration/:
     post:
@@ -20,7 +20,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserRegResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User registered successfully, email confirmation required"
         400:
           description: Ошибка валидации данных
           content:
@@ -70,72 +74,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Invalid data"
+              example:
+                error: "Invalid data"
         401:
           description: Неверный пароль
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Invalid password"
+              example:
+                error: "Invalid password"
+        403:
+          description: Email пользователя не подтвержден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User's email is not confirmed"
         404:
           description: Пользователь не найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "User not found"
+              example:
+                error: "User not found"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
 
-  /api/v1/auth/login/google:
+  /api/v1/auth/link/google:
       get:
         tags:
           - Auth
-        operationId: Авторизация пользователя через Google
+        operationId: Ссылка на авторизацию пользователя через Google
         responses:
           200:
-            description: Успешная авторизация
+            description: Успешное получение ссылки на авторизацию
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/UserLoginResponse'
+                  $ref: '#/components/schemas/UserGoogleLoginResponse'
 
-  /api/v1/auth/login/yandex:
+  /api/v1/auth/link/yandex:
     get:
       tags:
         - Auth
-      operationId: Авторизация пользователя через Yandex
+      operationId: Ссылка на авторизацию пользователя через Yandex
       responses:
         200:
-          description: Успешная авторизация
+          description: Успешное получение ссылки на авторизацию
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserLoginResponse'
+                $ref: '#/components/schemas/UserYandexLoginResponse'
 
   /api/v1/auth/refresh_token/:
     post:
       tags:
         - Auth
       operationId: Обновление access токена
+      description: При запросе необходимо передать refresh токен в заголовке Authorization "Bearer <token>"
       security:
         - jwt: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenRequest'
+      headers:
+        Authorization:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: string
+                format: jwt
+                description: Refresh JWT токен
+                example: "Bearer <token>"
       responses:
         200:
           description: Успешное обновление access токена
@@ -149,24 +166,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Invalid data"
+              example:
+                error: "Invalid data"
         401:
           description: Неавторизованный доступ (JWT не предоставлен или недействителен)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Not authorized"
+              example:
+                error: "Not authorized"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
+
+  /api/v1/auth/confirm_email/{code}:
+    get:
+      tags:
+        - Auth
+      operationId: Подтверждение email
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Код подтверждения
+          schema:
+            type: string
+      responses:
+        200:
+          description: Успешное подтверждение email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmEmailResponse'
+        400:
+          description: Неверный код подтверждения или код истек
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid code or code expired"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+        409:
+          description: Пользователь уже подтвержден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User already confirmed"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
 
   /api/v1/users/{user_id}:
     get:
@@ -253,40 +322,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Invalid data"
+
+              example:
+                error: "Invalid data"
         401:
           description: Неавторизованный доступ (JWT не предоставлен или недействителен)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Not authorized"
+              example:
+                error: "Not authorized"
         403:
           description: Недостаточно прав доступа
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Permission denied"
+              example:
+                error: "Permission denied"
         404:
           description: Пользователь не найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "User not found"
+              example:
+                error: "User not found"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
     delete:
       tags:
         - User
@@ -317,24 +387,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Permission denied"
+              example:
+                error: "Permission denied"
         404:
           description: Пользователь не найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "User not found"
+              example:
+                error: "User not found"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
 
   /api/v1/users/logout/:
     post:
@@ -360,16 +430,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Not authorized"
+              example:
+                error: "Not authorized"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
 
   /api/v1/users/:
     get:
@@ -402,24 +472,107 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Invalid data"
+              example:
+                error: "Invalid data"
         401:
           description: Неавторизованный доступ (JWT не предоставлен или недействителен)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Not authorized"
+              example:
+                error: "Not authorized"
         500:
           description: Ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-                example:
-                  error: "Internal server error"
+              example:
+                error: "Internal server error"
+
+  /api/v1/currencies/:
+    get:
+      tags:
+        - Currencies
+      operationId: Получение списка валют
+      security:
+        - jwt: []
+      responses:
+        200:
+          description: Успешное получение списка валют
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserCurrenciesResponse'
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not authorized"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
+
+    patch:
+      tags:
+        - Currencies
+      operationId: Обновление валюты
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserCurrencyRequest'
+      responses:
+        200:
+          description: Успешное обновление валюты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserCurrencyResponse'
+        401:
+          description: Неавторизованный доступ (JWT не предоставлен или недействителен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not authorized"
+        404:
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+        500:
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Internal server error"
 
 components:
   securitySchemes:
@@ -456,11 +609,21 @@ components:
           type: string
           example: "Doe"
 
-    UserLoginResponse:
-      schema:
-        $ref: '#/components/schemas/UserRegResponse'
+    UserGoogleLoginResponse:
+      type: object
+      properties:
+        google_link:
+          type: string
+          example: https://domain.com/api/v1/auth/login/google
 
-    UserRegResponse:
+    UserYandexLoginResponse:
+      type: object
+      properties:
+        yandex_link:
+          type: string
+          example: https://domain.com/api/v1/auth/login/yandex
+
+    UserLoginResponse:
       type: object
       properties:
         access_token:
@@ -470,6 +633,11 @@ components:
           type: string
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
+    ConfirmEmailResponse:
+      type: object
+      properties:
+        schema:
+          $ref: '#/components/schemas/UserLoginResponse'
     UserLoginRequest:
       type: object
       properties:
@@ -571,4 +739,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GetUserResponse'
+
+    GetUserCurrenciesResponse:
+      type: object
+      properties:
+        gold:
+          type: integer
+          example: 100
+        guild_rage:
+          type: integer
+          example: 15
+
+    UpdateUserCurrencyRequest:
+      type: object
+      properties:
+        gold:
+          type: integer
+          example: 100
+        guild_rage:
+          type: integer
+          example: 15
+
+    UpdateUserCurrencyResponse:
+      type: object
+      schema:
+        $ref: '#/components/schemas/GetUserCurrenciesResponse'
         

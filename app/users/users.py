@@ -8,7 +8,7 @@ from config import logger, JWT_ACCESS_BLOCKLIST
 
 from decorators import with_session
 
-# from signals import change_username_signal
+from pydantic import ValidationError
 
 from flask import make_response, request, jsonify, Blueprint
 from flask.views import MethodView
@@ -90,7 +90,8 @@ class BaseUserView(MethodView):
         """
         raise HttpError(
             400,
-            f"{error_validation_data[0]['msg'].split(',')[1]}"
+
+            f"{error_validation_data[0]['msg']}"
         )
 
 
@@ -117,15 +118,14 @@ class UserView(BaseUserView):
 
             response_data = GetUserResponse.model_validate(user)
 
-            if isinstance(response_data, GetUserResponse):
-                return jsonify(response_data.model_dump()), 200
+            return jsonify(response_data.model_dump()), 200
 
-            else:
-                logger.error(
-                    f"Ошибка валидации данных {response_data}"
-                    f"от пользователя: {self.user_id}"
-                )
-                self.handle_error(HttpError, "Error returning user data", 500)
+        except ValidationError as e:
+            logger.error(
+                f"Ошибка валидации данных {user}"
+                f"для пользователя: {self.user_id}: {e}"
+            )
+            self.handle_error(HttpError, "Internal server error", 500)
 
         except SQLAlchemyError as e:
             logger.error(
@@ -157,39 +157,42 @@ class UserView(BaseUserView):
                     self.handle_error(HttpError, "User not found", 404)
 
                 response_data = GetUserResponse.model_validate(user)
-                # if user_data.username:
-                #     change_username_signal.send(
-                #         self.__class__,
-                #         user_id=user_id,
-                #         username=user_data.username
-                #     )
-                if isinstance(response_data, GetUserResponse):
-                    return jsonify(response_data.model_dump()), 200
 
-                else:
-                    logger.error(
-                        f"Ошибка валидации данных {response_data}"
-                        f"от пользователя: {self.user_id}"
+                if user_data.username:
+                    change_username_signal.send(
+                        self.__class__,
+                        user_id=user_id,
+                        username=user.username
                     )
-                    self.handle_error(
-                        HttpError,
-                        "Error returning user data",
-                        500
-                    )
+
+                return jsonify(response_data.model_dump()), 200
+
+            except ValidationError as e:
+                logger.error(
+                    f"Ошибка валидации данных "
+                    f"{user_data.model_dump(exclude={"password"})} "
+                    f"для пользователя: {self.user_id}: {e}"
+                )
+                self.handle_validation_errors(e)
 
             except SQLAlchemyError as e:
                 logger.error(
-                    f"Ошибка при обновлении пользователя c id: {user_id} и"
-                    f"с данными: {user_data}: {e}"
+                    f"Ошибка при обновлении пользователя c id: {user_id} и "
+                    f"с данными: {user_data.model_dump(exclude={"password"})}"
+                    f": {e}"
                 )
                 self.handle_error(HttpError, "Internal server error", 500)
 
         else:
             logger.error(
-                f"Ошибка валидации данных {user_data}"
+
+                f"Ошибка валидации данных "
+                f"{user_data.model_dump(exclude={"password"})}"
                 f"от пользователя: {self.user_id}"
             )
-            self.handle_validation_errors(user_data)
+            self.handle_validation_errors(
+                user_data.model_dump(exclude={"password"})
+            )
 
     @with_session
     @jwt_required()
@@ -240,23 +243,19 @@ class GetUsersListResource(BaseUserView):
             try:
                 users = get_users(session_db, validate_users_ids.user_ids)
 
-                response_data = validate_schema(
-                    GetUsersListResponse,
-                    users=users
-                )
-                if isinstance(response_data, GetUsersListResponse):
-                    return jsonify(response_data.model_dump()), 200
+                if users is None:
+                    self.handle_error(HttpError, "Users not found", 404)
 
-                else:
-                    logger.error(
-                        f"Ошибка валидации данных {response_data}"
-                        f"от пользователя: {self.user_id}"
-                    )
-                    self.handle_error(
-                        HttpError,
-                        "Error returning user data",
-                        500
-                    )
+                response_data = GetUsersListResponse(users=users)
+
+                return jsonify(response_data.model_dump()), 200
+
+            except ValidationError as e:
+                logger.error(
+                    f"Ошибка валидации данных {response_data}"
+                    f"для пользователя: {self.user_id}: {e}"
+                )
+                self.handle_error(HttpError, "Internal server error", 500)
 
             except SQLAlchemyError as e:
                 logger.error(f"Ошибка при получении списка пользователей: {e}")

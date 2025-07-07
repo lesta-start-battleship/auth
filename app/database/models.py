@@ -24,17 +24,18 @@ class TransactionStatus(Enum):
 
 
 class Base(DeclarativeBase):
-    pass
-
-
-class UserBase(Base):
-    __tablename__ = "users"
+    __abstract__ = True
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         autoincrement=True
     )
+
+
+class UserBase(Base):
+    __tablename__ = "users"
+
     username: Mapped[str] = mapped_column(
         String(50),
         unique=True,
@@ -73,11 +74,6 @@ class UserBase(Base):
 class UserCurrency(Base):
     __tablename__ = "user_currencies"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        autoincrement=True
-    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         unique=True
@@ -101,11 +97,6 @@ class UserCurrency(Base):
 class UserTransaction(Base):
     __tablename__ = "user_transactions"
 
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        autoincrement=True
-    )
     transaction_id: Mapped[str] = mapped_column(
         String(36),
         unique=True,

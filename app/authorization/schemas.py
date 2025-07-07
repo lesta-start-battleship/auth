@@ -35,18 +35,6 @@ class UserRegRequest(BaseModel):
             )
         return password
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, email):
-        if not email:
-            raise ValueError("Email не введен")
-        if not re.match(
-            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-            email
-        ):
-            raise ValueError("Неверный формат email")
-        return email
-
 
 class UserLoginRequest(BaseModel):
     username: str

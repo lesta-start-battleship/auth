@@ -103,6 +103,7 @@ def update_user(
             setattr(user, key, value)
 
         session_db.commit()
+        session_db.refresh(user)
 
         return user
 
