@@ -15,13 +15,14 @@ def handle_balance_reserve(db: Session, msg: dict[str, str | int]) -> None:
         f"[Обработчик] Обработка сообщения на топике: shop.balance.reserve.request.auth с данными: {msg}"
     )
     transaction_id = msg["transaction_id"]
+    prefixed_transaction_id = f"shop:{transaction_id}"
     user_id = msg["user_id"]
     amount = msg["cost"]
     currency = CurrencyType(msg["currency_type"].lower())
     error_message = "null"
 
     if amount <= 0:
-        logger.warning(f"Недопустимая сумма: {amount} для транзакции {transaction_id}")
+        logger.warning(f"Недопустимая сумма: {amount} для транзакции {prefixed_transaction_id}")
         send_message_to_kafka(
             topic="auth.balance.reserve.response.shop",
             payload={
@@ -55,7 +56,8 @@ def handle_balance_reserve(db: Session, msg: dict[str, str | int]) -> None:
         f"[Обработчик] Получена информация о валюте пользователя {user_id}: {user_currency}"
     )
     transaction = create_user_transaction_object(
-        f"shop:" + transaction_id, user_id, currency, amount, TransactionStatus.PENDING
+        prefixed_transaction_id, user_id, currency,
+        amount, TransactionStatus.PENDING
     )
     logger.info(f"[Обработчик] Создан объект транзакции: {transaction}")
 
@@ -87,7 +89,7 @@ def handle_balance_reserve(db: Session, msg: dict[str, str | int]) -> None:
         f"[Обработчик] Сохранение транзакции в базу данных со статусом {transaction.status}"
     )
     save_transaction(db, transaction)
-    logger.info(f"[Обработчик] Транзакция {transaction_id} успешно сохранена")
+    logger.info(f"[Обработчик] Транзакция {prefixed_transaction_id} успешно сохранена")
 
     if (
         currency == CurrencyType.GOLD and

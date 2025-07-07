@@ -15,6 +15,7 @@ def handle_balance_compensate(db: Session, msg: dict[str, str | int]) -> None:
         f"[Обработчик] Обработка сообщения на топике: shop.balance.compensate.request.auth с данными: {msg}"
     )
     transaction_id = msg["transaction_id"]
+    prefixed_transaction_id = f"shop:{transaction_id}"
     user_id = msg["user_id"]
     amount = msg["cost"]
     currency = CurrencyType(msg["currency_type"].lower())
@@ -22,7 +23,7 @@ def handle_balance_compensate(db: Session, msg: dict[str, str | int]) -> None:
 
     if amount <= 0:
         logger.warning(
-            f"[Обработчик] Недопустимая сумма: {amount} для транзакции {transaction_id}"
+            f"[Обработчик] Недопустимая сумма: {amount} для транзакции {prefixed_transaction_id}"
         )
         send_message_to_kafka(
             topic="auth.balance.compensate.response.shop",
@@ -52,10 +53,10 @@ def handle_balance_compensate(db: Session, msg: dict[str, str | int]) -> None:
         )
         return None
 
-    transaction = get_user_transaction(db, f"shop:" + transaction_id, user_id)
+    transaction = get_user_transaction(db, prefixed_transaction_id, user_id)
     if not transaction:
         logger.warning(
-            f"[Обработчик] Транзакция {transaction_id} не найдена для пользователя {user_id}"
+            f"[Обработчик] Транзакция {prefixed_transaction_id} не найдена для пользователя {user_id}"
         )
         send_message_to_kafka(
             topic="auth.balance.compensate.response.shop",
@@ -70,7 +71,7 @@ def handle_balance_compensate(db: Session, msg: dict[str, str | int]) -> None:
         return None
 
     logger.info(
-        f"[Обработчик] Найдена транзакция {transaction_id} со статусом {transaction.status}"
+        f"[Обработчик] Найдена транзакция {prefixed_transaction_id} со статусом {transaction.status}"
     )
     user_currency = get_user_currency(db, user_id)
     if not user_currency:
