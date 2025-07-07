@@ -142,11 +142,9 @@ class RegistrationView(BaseAuthView):
         else:
             logger.error(
                 "Ошибка валидации данных регистрации: "
-                f"{validate_data.model_dump(exclude={'password'})}"
+                f"{validate_data}"
             )
-            self.handle_validation_errors(
-                validate_data.model_dump(exclude={'password'})
-            )
+            self.handle_validation_errors(validate_data)
 
 
 class LoginView(BaseAuthView):
@@ -213,11 +211,9 @@ class LoginView(BaseAuthView):
         else:
             logger.error(
                 "Ошибка валидации данных входа: "
-                f"{validate_data.model_dump(exclude={'password'})}"
+                f"{validate_data}"
             )
-            self.handle_validation_errors(
-                validate_data.model_dump(exclude={'password'})
-            )
+            self.handle_validation_errors(validate_data)
 
 class RefreshView(BaseAuthView):
 
