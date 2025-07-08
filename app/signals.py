@@ -29,7 +29,7 @@ def user_registered_handler(sender, **kwargs):
         "Чтобы активировать вашу учетную запись, "
         "пожалуйста, подтвердите свой адрес электронной почты, "
         "перейдя по следующей ссылке:\n\n"
-        f"http://37.9.53.236/auth/confirm_email/{confirm_code}\n\n"
+        f"https://battleship-lesta-start-auth.ru/api/v1/auth/confirm_email/{confirm_code}\n\n"
         "С уважением,\n"
         "Команда игры Морской бой"
     )
@@ -37,7 +37,7 @@ def user_registered_handler(sender, **kwargs):
         mail.send(msg)
 
     except SMTPRecipientsRefused as e:
-        raise HttpError(400, "Некорректный email получателя")
+        raise HttpError(400, "Некорректный email для подтверждения")
 
     except Exception as e:
         logger.error(f"Ошибка отправки письма: {e}")

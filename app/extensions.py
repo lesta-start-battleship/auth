@@ -22,8 +22,8 @@ device_login_redis = redis.StrictRedis(
 )
 
 confirm_code_redis = redis.StrictRedis(
-    host=os.getenv("REDIS_HOST", "redis"),
-    port=os.getenv("REDIS_PORT", 6379),
+    host=CACHE_REDIS_HOST,
+    port=CACHE_REDIS_PORT,
     db=2,
     decode_responses=True
 )

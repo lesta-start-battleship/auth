@@ -46,18 +46,18 @@ from config import (
 
 app = Flask(__name__)
 
-# with open("jwt_private_key", "r") as f:
-#     app.config["JWT_PRIVATE_KEY"] = f.read()
+with open("jwt_private_key.pem", "r") as f:
+    app.config["JWT_PRIVATE_KEY"] = f.read()
 
-# with open("jwt_pub_key.pub", "r") as f:
-#     app.config["JWT_PUBLIC_KEY"] = f.read()
+with open("jwt_public_key.pem", "r") as f:
+    app.config["JWT_PUBLIC_KEY"] = f.read()
 
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 app.config["SWAGGER"] = {"openapi": "3.0.0", "version": VERSION}
 app.config["FLASK_ADMIN_SWATCH"] = "slate"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = JWT_ACCESS_TOKEN_EXPIRES
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
-# app.config["JWT_ALGORITHM"] = "RS256"
+app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_COOKIE_SECURE"] = True
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 

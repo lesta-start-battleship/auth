@@ -28,8 +28,8 @@ class GetUserResponse(BaseModel):
     id: int
     email: str
     username: str
-    name: str
-    surname: str
+    name: str | None = None
+    surname: str | None = None
     role: str
     is_active: bool
     created_at: datetime

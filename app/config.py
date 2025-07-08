@@ -17,8 +17,8 @@ load_dotenv(override=True)
 
 FLASK_PORT = os.getenv("FLASK_PORT")
 
-CACHE_REDIS_HOST = os.getenv("CACHE_REDIS_HOST")
-CACHE_REDIS_PORT = os.getenv("CACHE_REDIS_PORT")
+CACHE_REDIS_HOST = os.getenv("REDIS_HOST")
+CACHE_REDIS_PORT = os.getenv("REDIS_PORT")
 
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")

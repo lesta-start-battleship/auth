@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.1] - (2025-07-08)
+
+### Fix
+
+- fix(app): Remove check jwt tokens in ingress.yaml file and fix bug auth, working for user
+
 ## [1.1.0] - (2025-07-08)
 
 ### Feat

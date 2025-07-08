@@ -3,6 +3,8 @@ venv
 *.log*
 __pycache__
 .env
+secret_kuber.yaml
+config_kuber.yaml
 
 ### Python template
 # Byte-compiled / optimized / DLL files

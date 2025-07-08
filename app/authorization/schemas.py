@@ -16,8 +16,8 @@ class UserRegRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
-    name: str
-    surname: str
+    name: str | None = None
+    surname: str | None = None
 
     @field_validator("password")
     @classmethod
