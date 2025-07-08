@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.2] - (2025-07-08)
+
+### Fix
+
+- fix(app): Adding loading to environment variables of private and public key for jwt tokens
+
 ## [1.1.1] - (2025-07-08)
 
 ### Fix

@@ -47,6 +47,16 @@ spec:
               configMapKeyRef:
                 name: auth-config
                 key: POSTGRES_DB
+          - name: JWT_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: secret_key
+                key: JWT_PRIVATE_KEY
+          - name: JWT_PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                name: secret_key
+                key: JWT_PUBLIC_KEY
       containers:
         - name: auth
           image: auth-service:latest
