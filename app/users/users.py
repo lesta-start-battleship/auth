@@ -90,7 +90,6 @@ class BaseUserView(MethodView):
         """
         raise HttpError(
             400,
-
             f"{error_validation_data[0]['msg']}"
         )
 
@@ -157,16 +156,8 @@ class UserView(BaseUserView):
                     self.handle_error(HttpError, "User not found", 404)
 
                 response_data = GetUserResponse.model_validate(user)
-
-                if user_data.username:
-                    change_username_signal.send(
-                        self.__class__,
-                        user_id=user_id,
-                        username=user.username
-                    )
-
-                return jsonify(response_data.model_dump()), 200
-
+                if isinstance(response_data, GetUserResponse):
+                    return jsonify(response_data.model_dump()), 200
             except ValidationError as e:
                 logger.error(
                     "Ошибка валидации данных "

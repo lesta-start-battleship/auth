@@ -1,12 +1,23 @@
 import os
+
 from datetime import datetime, timezone, timedelta
-from config import FLASK_PORT
+from threading import Thread
+from kafka.consumer import start_consumer_loop
+
 from authorization.auth import auth_blueprint
-from authorization.google import api_routes # noqa
-from authorization.yandex import api_routes # noqa
+from authorization.oauth.google import api_routes # noqa
+from authorization.oauth.yandex import api_routes # noqa
 
 from users.users import user_blueprint
 from currencies.routs import currencies_blueprint
+from admin import (
+    admin,
+    UserBaseAdminView,
+    UserCurrencyAdminView,
+    UserTransactionAdminView
+)
+from database.database import session
+from database.models import UserBase, UserCurrency, UserTransaction
 
 from extensions import jwt_redis_blocklist, oauth, mail
 
@@ -43,6 +54,7 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 app.config["SWAGGER"] = {"openapi": "3.0.0", "version": VERSION}
+app.config["FLASK_ADMIN_SWATCH"] = "slate"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = JWT_ACCESS_TOKEN_EXPIRES
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = JWT_REFRESH_TOKEN_EXPIRES
 # app.config["JWT_ALGORITHM"] = "RS256"
@@ -62,6 +74,12 @@ registration_user_signal.connect(user_registered_handler)
 app.register_blueprint(auth_blueprint, url_prefix="/api/v1/auth")
 app.register_blueprint(user_blueprint, url_prefix="/api/v1/users")
 app.register_blueprint(currencies_blueprint, url_prefix="/api/v1/currencies")
+
+admin.add_view(UserBaseAdminView(UserBase, session()))
+admin.add_view(UserCurrencyAdminView(UserCurrency, session()))
+admin.add_view(UserTransactionAdminView(UserTransaction, session()))
+
+admin.init_app(app)
 
 swagger = Swagger(app, template_file="api_doc.yaml")
 jwt = JWTManager(app)
@@ -124,5 +142,5 @@ def refresh_expiring_jwts(response: Response):
 
 
 if __name__ == "__main__":
-    # Thread(target=start_kafka_consumer, daemon=True).start()
+    Thread(target=start_consumer_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=FLASK_PORT)

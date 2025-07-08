@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.0] - (2025-07-08)
+
+### Feat
+
+- feat(app): Adding admin panel
+
+
 ## [1.0.1] - (2025-07-07)
 
 ### Fix
