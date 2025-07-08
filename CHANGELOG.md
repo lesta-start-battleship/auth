@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.5] - (2025-07-08)
+
+### Fix
+
+- fix(app): Fixing auth container initialization issue and updating dependencies
+
 ## [1.1.4] - (2025-07-08)
 
 ### Fix
