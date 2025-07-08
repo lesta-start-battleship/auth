@@ -3,6 +3,7 @@ from database.models import UserBase
 from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from werkzeug.security import generate_password_hash
+from kafka.producer import send_message_to_kafka
 
 
 def get_user_by_id(
@@ -96,6 +97,7 @@ def update_user(
         if not user:
             return False
 
+        original_username = user.username
         if "password" in kwargs:
             kwargs["h_password"] = generate_password_hash(kwargs["password"])
 
@@ -104,6 +106,13 @@ def update_user(
 
         session_db.commit()
         session_db.refresh(user)
+
+        if "username" in kwargs and kwargs["username"] != original_username:
+            send_message_to_kafka(
+                topic="prod.auth.fact.username-change.1",
+                payload={"user_id": user.id, "username": user.username},
+                target_service="scoreboard"
+            )
 
         return user
 

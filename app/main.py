@@ -1,15 +1,16 @@
 import os
 from datetime import datetime, timezone, timedelta
-from config import FLASK_PORT
+from threading import Thread
+from kafka.consumer import start_consumer_loop
 from authorization.auth import auth_blueprint
-from authorization.google import api_routes # noqa
-from authorization.yandex import api_routes # noqa
-
+from authorization.oauth.google import api_routes # noqa
+from authorization.oauth.yandex import api_routes # noqa
 from users.users import user_blueprint
 from currencies.routs import currencies_blueprint
 
 from extensions import jwt_redis_blocklist, oauth, mail
 
+from extensions import jwt_redis_blocklist, oauth
 from errors import HttpError
 from signals import (
     user_registered_handler, registration_user_signal,
@@ -124,5 +125,5 @@ def refresh_expiring_jwts(response: Response):
 
 
 if __name__ == "__main__":
-    # Thread(target=start_kafka_consumer, daemon=True).start()
+    Thread(target=start_consumer_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=FLASK_PORT)
