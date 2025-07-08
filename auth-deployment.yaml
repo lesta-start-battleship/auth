@@ -50,12 +50,12 @@ spec:
           - name: JWT_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
-                name: secret_key
+                name: secret-key
                 key: JWT_PRIVATE_KEY
           - name: JWT_PUBLIC_KEY
             valueFrom:
               secretKeyRef:
-                name: secret_key
+                name: secret-key
                 key: JWT_PUBLIC_KEY
       containers:
         - name: auth
@@ -394,6 +394,3 @@ metadata:
 spec:
   selector:
     app: kafka
-  ports:
-    - port: 9092
-      targetPort: 9092

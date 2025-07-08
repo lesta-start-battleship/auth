@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.3] - (2025-07-08)
+
+### Fix
+
+- fix(k8s): Fix secret name for auth-deployment.yaml file
+
+
 ## [1.1.2] - (2025-07-08)
 
 ### Fix
