@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: main-ingress
   annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
     nginx.ingress.kubernetes.io/auth-jwt: "true"
     nginx.ingress.kubernetes.io/auth-jwt-secret: jwt-secret
     nginx.ingress.kubernetes.io/auth-jwt-key: key
@@ -11,7 +14,6 @@ metadata:
     nginx.ingress.kubernetes.io/auth-jwt-set-headers: "x-user: $jwt_claim_user"
 
 spec:
-  ingressClassName: nginx
   rules:
   - http:
       paths:
@@ -22,8 +24,6 @@ spec:
             name: auth-service
             port:
               number: 80
-  - http:
-      paths:
       - path: /
         pathType: Prefix
         backend:
