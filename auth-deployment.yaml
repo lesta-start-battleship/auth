@@ -344,19 +344,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kafka
+  name: kafka-auth
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka
+      app: kafka-auth
   template:
     metadata:
       labels:
-        app: kafka
+        app: kafka-auth
     spec:
       containers:
-        - name: kafka
+        - name: kafka-auth
           image: confluentinc/cp-kafka:7.5.0
           ports:
             - containerPort: 9092
@@ -385,12 +385,30 @@ spec:
                   name: auth-config
                   key: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
 
+            - name: KAFKA_LISTENERS
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: KAFKA_LISTENERS
+
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+
 ---
 # ===== SERVICE KAFKA =====
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka
+  name: kafka-auth
 spec:
   selector:
-    app: kafka
+    app: kafka-auth
+  ports:
+    - name: kafka-auth
+      protocol: TCP
+      port: 9092
+      targetPort: 9092
+  type: ClusterIP
