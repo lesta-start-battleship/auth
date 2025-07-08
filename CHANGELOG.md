@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.7] - (2025-07-09)
+
+### Fix
+
+- fix(app): Revert changes to main.py and pass JWT_PUBLIC_KEY and JWT_PRIVATE_KEY to container on initialization
+
 ## [1.1.6] - (2025-07-08)
 
 ### Fix

@@ -142,6 +142,18 @@ spec:
                   name: auth-config
                   key: MAIL_PORT
 
+            - name: JWT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: JWT_PRIVATE_KEY
+
+            - name: JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: JWT_PUBLIC_KEY
+
 ---
 # ===== AUTOSCALER =====
 apiVersion: autoscaling/v2
