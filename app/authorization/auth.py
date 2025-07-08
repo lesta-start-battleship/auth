@@ -215,6 +215,7 @@ class LoginView(BaseAuthView):
             )
             self.handle_validation_errors(validate_data)
 
+
 class RefreshView(BaseAuthView):
 
     @jwt_required(refresh=True)
@@ -276,7 +277,7 @@ class ConfirmEmailView(BaseAuthView):
         """
 
         username = confirm_code_redis.get(code)
-        
+
         if not username:
             self.handle_error(HttpError, "Invalid code or code expired", 400)
 
