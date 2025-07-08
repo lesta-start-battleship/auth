@@ -1,4 +1,5 @@
 import os
+import base64
 
 from datetime import datetime, timezone, timedelta
 from threading import Thread
@@ -46,9 +47,11 @@ from config import (
 
 app = Flask(__name__)
 
+jwt_private_key = os.getenv("JWT_PRIVATE_KEY")
+jwt_public_key = os.getenv("JWT_PUBLIC_KEY")
 
-app.config["JWT_PRIVATE_KEY"] = os.getenv("JWT_PRIVATE_KEY")
-app.config["JWT_PUBLIC_KEY"] = os.getenv("JWT_PUBLIC_KEY")
+app.config["JWT_PRIVATE_KEY"] = base64.b64decode(jwt_private_key).decode("utf-8")
+app.config["JWT_PUBLIC_KEY"] = base64.b64decode(jwt_public_key).decode("utf-8")
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 
 app.config["SWAGGER"] = {"openapi": "3.0.0", "version": VERSION}

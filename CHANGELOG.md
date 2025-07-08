@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.6] - (2025-07-08)
+
+### Fix
+
+- fix(app): Adding private and public key decoding from Kubernetes Secrets
+
 ## [1.1.5] - (2025-07-08)
 
 ### Fix
