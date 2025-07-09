@@ -169,8 +169,8 @@ class GoogleDeviceCheck(BaseAuthView):
         delete_device_login_record(session_db, login_record)
 
         return jsonify({
-            "access_token": self._access_token(user),
-            "refresh_token": self._refresh_token(user),
+            "access_token": f"Bearer {self._access_token(user)}",
+            "refresh_token": f"Bearer {self._refresh_token(user)}",
             "status": "authenticated",
             "user": {
                 "id": user.id,

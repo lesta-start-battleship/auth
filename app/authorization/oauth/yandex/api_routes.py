@@ -108,8 +108,8 @@ class YandexAuthorize(BaseAuthView):
         }
 
         response_data = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": f"Bearer {access_token}",
+            "refresh_token": f"Bearer {refresh_token}",
             "user": user_data
         }
 
@@ -239,8 +239,8 @@ class YandexDeviceCheck(BaseAuthView):
         delete_device_login_record(session_db, login_record)
 
         return jsonify({
-            "access_token": self._access_token(user),
-            "refresh_token": self._refresh_token(user),
+            "access_token": f"Bearer {self._access_token(user)}",
+            "refresh_token": f"Bearer {self._refresh_token(user)}",
             "status": "authenticated",
             "user": {
                 "id": user.id,
