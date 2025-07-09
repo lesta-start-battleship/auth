@@ -17,7 +17,7 @@ def user_registered_handler(sender, **kwargs):
     username = kwargs.get("username")
     email = kwargs.get("email")
 
-    confirm_code_redis.set(confirm_code, username, ex=60*5)
+    confirm_code_redis.set(confirm_code, username)
 
     msg = Message(
         "Подтверждение почты при регистрации",
