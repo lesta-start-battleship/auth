@@ -14,14 +14,13 @@ from decorators import with_session
 from flask import url_for, make_response, jsonify, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
-from config import logger, GOOGLE_AUTH_URL
+from config import logger, GOOGLE_AUTH_URL, SERVER_ADDRESS
 
 
 class GoogleLogin(MethodView):
     def get(self):
         logger.info("Запрос на авторизацию через Google из браузера")
-        redirect_uri = url_for("Auth.google_authorize", _external=True)
-
+        redirect_uri = f"{SERVER_ADDRESS}/api/v1/auth/google/callback"
         return google.authorize_redirect(redirect_uri)
 
 
