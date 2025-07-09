@@ -13,19 +13,19 @@ from authorization.oauth.services import (
     delete_device_login_record
 )
 from decorators import with_session
-from flask import url_for, make_response, jsonify, redirect, request
+from flask import make_response, jsonify, redirect, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 from config import (
     logger, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET, YANDEX_AUTH_URL,
-    YANDEX_REDIRECT_URL
+    YANDEX_REDIRECT_URL, SERVER_ADDRESS
 )
 
 
 class YandexLogin(MethodView):
     def get(self):
         logger.info("Запрос на авторизацию через Yandex из браузера")
-        redirect_uri = url_for("Auth.yandex_authorize", _external=True)
+        redirect_uri = f"{SERVER_ADDRESS}/api/v1/auth/yandex/callback"
         params = {
             "response_type": "code",
             "client_id": YANDEX_CLIENT_ID,
@@ -50,11 +50,13 @@ class YandexAuthorize(BaseAuthView):
             ), 400
 
         try:
+            redirect_uri = f"{SERVER_ADDRESS}/api/v1/auth/yandex/callback"
             token_data = {
                 "grant_type": "authorization_code",
                 "code": code,
                 "client_id": YANDEX_CLIENT_ID,
-                "client_secret": YANDEX_CLIENT_SECRET
+                "client_secret": YANDEX_CLIENT_SECRET,
+                "redirect_uri": redirect_uri
             }
 
             response = requests.post(
