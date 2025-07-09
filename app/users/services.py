@@ -137,6 +137,12 @@ def delete_user(session_db: Session, user_id: int) -> bool:
         session_db.delete(user)
         session_db.commit()
 
+        send_message_to_kafka(
+            topic="auth.user.delete.response.guild",
+            payload={"user_id": user.id},
+            target_service="guilds"
+        )
+
         return True
 
     except SQLAlchemyError as e:
