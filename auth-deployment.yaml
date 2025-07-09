@@ -18,6 +18,42 @@ spec:
         imagePullPolicy: Never
         command: ["alembic", "upgrade", "heads"]
         env:
+          - name: YANDEX_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: auth-secret
+                key: YANDEX_CLIENT_SECRET
+
+          - name: YANDEX_CLIENT_ID
+            valueFrom:
+              configMapKeyRef:
+                name: auth-config
+                key: YANDEX_CLIENT_ID
+
+          - name: GOOGLE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: auth-secret
+                key: GOOGLE_CLIENT_SECRET
+
+          - name: GOOGLE_CLIENT_SECRET_WEB
+            valueFrom:
+              secretKeyRef:
+                name: auth-secret
+                key: GOOGLE_CLIENT_SECRET_WEB
+
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: auth-secret
+                key: GOOGLE_CLIENT_ID
+
+          - name: GOOGLE_CLIENT_ID_WEB
+            valueFrom:
+              secretKeyRef:
+                name: auth-secret
+                key: GOOGLE_CLIENT_ID_WEB
+
           - name: SERVER_ADDRESS
             valueFrom:
               configMapKeyRef:
@@ -72,6 +108,42 @@ spec:
           ports:
             - containerPort: 5000
           env:
+            - name: YANDEX_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: YANDEX_CLIENT_SECRET
+
+            - name: YANDEX_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: YANDEX_CLIENT_ID
+
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_SECRET
+
+            - name: GOOGLE_CLIENT_SECRET_WEB
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_SECRET_WEB
+
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_ID
+
+            - name: GOOGLE_CLIENT_ID_WEB
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secret
+                  key: GOOGLE_CLIENT_ID_WEB
+
             - name: SERVER_ADDRESS
               valueFrom:
                 configMapKeyRef:
