@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.8] - (2025-07-09)
+
+### Fix
+
+- fix(app): Adding the server address to environment variables for generating links when registering via Google and Yandex
+
 ## [1.1.7] - (2025-07-09)
 
 ### Fix

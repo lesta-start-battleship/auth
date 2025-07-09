@@ -18,6 +18,12 @@ spec:
         imagePullPolicy: Never
         command: ["alembic", "upgrade", "heads"]
         env:
+          - name: SERVER_ADDRESS
+            valueFrom:
+              configMapKeyRef:
+                name: auth-config
+                key: SERVER_ADDRESS
+
           - name: POSTGRES_HOST
             valueFrom:
               configMapKeyRef:
@@ -47,11 +53,13 @@ spec:
               configMapKeyRef:
                 name: auth-config
                 key: POSTGRES_DB
+
           - name: JWT_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
                 name: secret-key
                 key: JWT_PRIVATE_KEY
+
           - name: JWT_PUBLIC_KEY
             valueFrom:
               secretKeyRef:
@@ -64,6 +72,12 @@ spec:
           ports:
             - containerPort: 5000
           env:
+            - name: SERVER_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: SERVER_ADDRESS
+
             - name: POSTGRES_HOST
               valueFrom:
                 configMapKeyRef:
