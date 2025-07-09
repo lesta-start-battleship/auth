@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from database.models import UserBase, UserCurrency
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
+from kafka.producer import send_message_to_kafka
 
 
 def get_user_by_username(
@@ -36,6 +37,19 @@ def create_user(
         currency = UserCurrency(user_id=user.id)
         session_db.add(currency)
         session_db.commit()
+        session_db.refresh(user)
+
+        send_message_to_kafka(
+            topic="prod.auth.fact.new-user.1",
+            payload={
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role.value.lower(),
+                "gold": 0
+            },
+            target_service="scoreboard"
+        )
 
         return user
 

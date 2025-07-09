@@ -10,7 +10,7 @@ def handle_guild_war_compensate(db: Session, msg: dict[str, str | int]) -> None:
     logger.info(
         f"[Обработчик] Обработка сообщения на топике: guild_war_canceled_declined_expired с данными: {msg}"
     )
-    status = msg.get("status")
+    status = msg["status"]
 
     if status not in {"declined", "canceled", "expired"}:
         logger.info(f"[Обработчик] Статус '{status}' не требует компенсации")
