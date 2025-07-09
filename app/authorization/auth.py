@@ -298,7 +298,14 @@ class ConfirmEmailView(BaseAuthView):
 
             response = make_response({
                 "access_token": f"Bearer {access_token}",
-                "refresh_token": f"Bearer {refresh_token}"
+                "refresh_token": f"Bearer {refresh_token}",
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "currencies": {
+                    "guild_rage": user.currencies.guild_rage,
+                    "gold": user.currencies.gold
+                }
                 }, 200)
 
             set_access_cookies(
