@@ -101,19 +101,20 @@ class UserView(BaseUserView):
 
     @with_session
     @jwt_required()
-    def get(self, session_db: Session, user_id: int) -> UserBase | HttpError:
+    def get(self, session_db: Session) -> UserBase | HttpError:
         """
         Получение пользователя по id
 
         :param session_db: сессия базы данных
-        :param user_id: id пользователя
         :return: UserBase | HttpError
         """
-        self.check_permission(user_id)
+
         try:
-            user = get_full_user_by_id(session_db, user_id)
+            user = get_full_user_by_id(session_db, self.user_id)
             if not user:
                 self.handle_error(HttpError, "User not found", 404)
+
+            self.check_permission(user.id) # Проверка доступа
 
             response_data = GetUserResponse.model_validate(user)
 
@@ -190,6 +191,7 @@ class UserView(BaseUserView):
         """
         Удаление пользователя по id
 
+        :param session_db: сессия базы данных
         :param user_id: id пользователя
         :return: bool | HttpError
         """

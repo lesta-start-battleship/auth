@@ -1,12 +1,20 @@
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from database.models import UserBase, UserCurrency, UserTransaction
+from flask_jwt_extended import jwt_required, get_jwt
+from database.models import Role
 
 
 admin = Admin(name="Auth admin panel", template_mode="bootstrap4")
 
 
-class UserBaseAdminView(ModelView):
+class CustomModelView(ModelView):
+    @jwt_required("cookies")
+    def is_accessible(self):
+        claims = get_jwt()
+        return claims["role"] == Role.ADMINISTRATOR.value
+
+
+class UserBaseAdminView(CustomModelView):
     column_list = (
         "id",
         "username",
@@ -24,7 +32,7 @@ class UserBaseAdminView(ModelView):
     page_size = 20
 
 
-class UserCurrencyAdminView(ModelView):
+class UserCurrencyAdminView(CustomModelView):
     column_list = (
         "user_id",
         "guild_rage",
@@ -34,7 +42,7 @@ class UserCurrencyAdminView(ModelView):
     )
 
 
-class UserTransactionAdminView(ModelView):
+class UserTransactionAdminView(CustomModelView):
     column_list = (
         "transaction_id",
         "user_id",

@@ -191,12 +191,12 @@ class LoginView(BaseAuthView):
 
                 set_access_cookies(
                     response,
-                    access_token,
+                    f"Bearer {access_token}",
                     max_age=60*60*24
                 )
                 set_refresh_cookies(
                     response,
-                    refresh_token,
+                    f"Bearer {refresh_token}",
                     max_age=60*60*24*7
                 )
 
@@ -246,7 +246,7 @@ class RefreshView(BaseAuthView):
 
                 set_access_cookies(
                     response,
-                    access_token,
+                    f"Bearer {access_token}",
                     max_age=60*60*24
                 )
 
@@ -310,12 +310,12 @@ class ConfirmEmailView(BaseAuthView):
 
             set_access_cookies(
                 response,
-                access_token,
+                f"Bearer {access_token}",
                 max_age=60*60*24
             )
             set_refresh_cookies(
                 response,
-                refresh_token,
+                f"Bearer {refresh_token}",
                 max_age=60*60*24*7
             )
 

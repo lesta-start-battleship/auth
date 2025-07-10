@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.11] - (2025-07-10)
+
+### Fix
+
+- fix(app): Fixing bugs related to kafka pod, restricting access to admin panel, changing token issuance format
+
+
 ## [1.1.10] - (2025-07-09)
 
 ### Fix

@@ -90,6 +90,12 @@ spec:
                 name: auth-config
                 key: POSTGRES_DB
 
+          - name: KAFKA_ADDRESS
+            valueFrom:
+              configMapKeyRef:
+                name: auth-config
+                key: KAFKA_ADDRESS
+
           - name: JWT_PRIVATE_KEY
             valueFrom:
               secretKeyRef:
@@ -198,11 +204,11 @@ spec:
                   name: auth-config
                   key: REDIS_PORT
 
-            - name: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_ADDRESS
               valueFrom:
                 configMapKeyRef:
                   name: auth-config
-                  key: KAFKA_BOOTSTRAP_SERVERS
+                  key: KAFKA_ADDRESS
             
             - name: MAIL_USERNAME
               valueFrom:

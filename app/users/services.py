@@ -107,12 +107,12 @@ def update_user(
         session_db.commit()
         session_db.refresh(user)
 
-        # if "username" in kwargs and kwargs["username"] != original_username:
-        #     send_message_to_kafka(
-        #         topic="prod.auth.fact.username-change.1",
-        #         payload={"user_id": user.id, "username": user.username},
-        #         target_service="scoreboard"
-        #     )
+        if "username" in kwargs and kwargs["username"] != original_username:
+            send_message_to_kafka(
+                topic="prod.auth.fact.username-change.1",
+                payload={"user_id": user.id, "username": user.username},
+                target_service="scoreboard"
+            )
 
         return user
 
@@ -137,11 +137,11 @@ def delete_user(session_db: Session, user_id: int) -> bool:
         session_db.delete(user)
         session_db.commit()
 
-        # send_message_to_kafka(
-        #     topic="auth.user.delete.response.guild",
-        #     payload={"user_id": user.id},
-        #     target_service="guilds"
-        # )
+        send_message_to_kafka(
+            topic="auth.user.delete.response.guild",
+            payload={"user_id": user.id},
+            target_service="guilds"
+        )
 
         return True
 

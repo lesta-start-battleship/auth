@@ -34,17 +34,17 @@ def create_user(
     session_db.commit()
     session_db.refresh(new_user)
 
-    # send_message_to_kafka(
-    #     topic="prod.auth.fact.new-user.1",
-    #     payload={
-    #         "user_id": new_user.id,
-    #         "username": new_user.username,
-    #         "email": new_user.email,
-    #         "role": new_user.role.value.lower(),
-    #         "gold": 0
-    #     },
-    #     target_service="scoreboard"
-    # )
+    send_message_to_kafka(
+        topic="prod.auth.fact.new-user.1",
+        payload={
+            "user_id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "role": new_user.role.value.lower(),
+            "gold": 0
+        },
+        target_service="scoreboard"
+    )
 
     return new_user
 

@@ -11,7 +11,7 @@ from authorization.oauth.services import (
 )
 from init_oauth import google
 from decorators import with_session
-from flask import url_for, make_response, jsonify, request
+from flask import make_response, jsonify, request
 from flask.views import MethodView
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 from config import logger, GOOGLE_AUTH_URL, SERVER_ADDRESS
@@ -70,20 +70,20 @@ class GoogleAuthorize(BaseAuthView):
         }
 
         response_data = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": f"Bearer {access_token}",
+            "refresh_token": f"Bearer {refresh_token}",
             "user": user_data
         }
 
         response = make_response(response_data, 200)
         set_access_cookies(
             response,
-            access_token,
+            f"Bearer {access_token}",
             max_age=60 * 60 * 24
         )
         set_refresh_cookies(
             response,
-            refresh_token,
+            f"Bearer {refresh_token}",
             max_age=60 * 60 * 24 * 7
         )
         logger.info(

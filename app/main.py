@@ -1,5 +1,4 @@
 import os
-import base64
 
 from datetime import datetime, timezone, timedelta
 from threading import Thread
@@ -26,7 +25,7 @@ from errors import HttpError
 from signals import (
     user_registered_handler, registration_user_signal,
 )
-from flask import Flask, Response, jsonify
+from flask import Flask, Response, jsonify, make_response
 from flasgger import Swagger
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import (
@@ -124,9 +123,12 @@ def refresh_expiring_jwts(response: Response):
                     "role": claims["role"]
                 }
             )
+            response = make_response(
+                {"access_token": f"Bearer {access_token}"}, 200
+            )
             set_access_cookies(
                 response,
-                access_token,
+                f"Bearer {access_token}",
                 max_age=60*60*24
             )
 

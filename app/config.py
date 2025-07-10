@@ -24,7 +24,7 @@ POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_DB = os.getenv("POSTGRES_DB")
 
-VERSION = os.getenv("VERSION")
+VERSION = "1.1.10"
 
 JWT_ACCESS_BLOCKLIST = timedelta(
     hours=int(os.getenv("JWT_ACCESS_BLOCKLIST", 1))

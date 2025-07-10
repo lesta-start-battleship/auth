@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+data:
+  SERVER_ADDRESS: "Ваш адрес или ip сервера"
+  POSTGRES_HOST: "Название хоста базы данных"
+  POSTGRES_PORT: "Порт базы данных"
+  POSTGRES_USER: "Пользователь базы данных"
+  POSTGRES_DB: "Название базы данных"
+  FLASK_PORT: "Порт Flask"
+  JWT_ACCESS_TOKEN_EXPIRES_DAYS: "Количество дней для жизни access токена, опционально, если задаете, необходимо пробросить в под"
+  JWT_REFRESH_TOKEN_EXPIRES_DAYS: "Количество дней для жизни refresh токена, опционально, если задаете, необходимо пробросить в под"
+  JWT_ACCESS_BLOCKLIST: "Количество дней для жизни access токена в блоклисте, опционально, если задаете, необходимо пробросить в под"
+  YANDEX_CLIENT_ID: "ID клиента Yandex"
+  REDIS_HOST: "Название хоста redis"
+  REDIS_PORT: "Порт хоста redis"
+  MAIL_USERNAME: "Ваше название эл. почты с которого будет отправляться письмо"
+  MAIL_SERVER: "Адрес сервера отправки писем"
+  MAIL_PORT: "Порт сервера отправки писем"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-auth:9092"
+  KAFKA_ADDRESS: "Адрес сервера kafka"
+  KAFKA_BROKER_ID: "1"
+  KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+  KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka.default.svc.cluster.local:9092"
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+  KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092"
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT"

@@ -1,6 +1,6 @@
 import httpx
 from database.models import (
-    UserBase, Role, UserCurrency, DeviceLogin, OAuthProvider
+    UserBase, DeviceLogin
 )
 from sqlalchemy.orm import Session
 from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET

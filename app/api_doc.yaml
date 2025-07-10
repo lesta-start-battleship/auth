@@ -262,10 +262,8 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                format: jwt
-                description: Refresh JWT токен
-                example: "Bearer <token>"
+                $ref: '#/components/schemas/RefreshTokenRequest'
+
       responses:
         200:
           description: Успешное обновление access токена
@@ -350,20 +348,13 @@ paths:
               example:
                 error: "Internal server error"
 
-  /api/v1/users/{user_id}:
+  /api/v1/users/:
     get:
       tags:
         - User
       operationId: Получение пользователя
       security:
         - jwt: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          description: ID пользователя
-          schema:
-            type: integer
       responses:
         200:
           description: Успешное получение пользователя
@@ -908,24 +899,39 @@ components:
           example: "pending"
 
     UserLoginResponse:
-      schema:
-        $ref: '#/components/schemas/UserRegResponse'
-
-    UserRegResponse:
       type: object
       properties:
         access_token:
           type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         refresh_token:
           type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
     ConfirmEmailResponse:
       type: object
       properties:
         schema:
           $ref: '#/components/schemas/UserLoginResponse'
+        user_id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "Nagibator2000"
+        email:
+          type: string
+          example: "user@example.com"
+        currencies:
+          type: object
+          properties:
+            guild_rage:
+              type: integer
+              example: 15
+            gold:
+              type: integer
+              example: 100
+
     UserLoginRequest:
       type: object
       properties:
@@ -939,16 +945,16 @@ components:
     RefreshTokenRequest:
       type: object
       properties:
-        refresh_token:
+        Authorization:
           type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
     RefreshTokenResponse:
       type: object
       properties:
         access_token:
           type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
     GetUserResponse:
       type: object
