@@ -99,9 +99,12 @@ auth
 
 1. Создать и заполнить файлы config_kuber.yaml и secret_kuber.yaml по примерам config_kuber.yaml.example и secret_kuber.yaml.example
    - Для наполнения файлов необходимо обратиться к документации Google, Yandex и почтового провайдера для получения необходимых данных
-2. Сделать файл project_development.sh исполняемым, командой `chmod +x project_development.sh`
-3. Запустить скрипт командой `./project_development.sh`
-4. Проверить запуск приложения командой `sudo kubectl get pods`
+2. Сгенерируйте публичный и приватный ключ `ssh-keygen -t rsa` или более детальной командой для генерации (см. интернет)
+3. Скопируйте публичный ключ по пути `/etc/ssh/certs/jwt_public_key.pem` и приватный ключ по пути `/etc/ssh/private/jwt_private_key.pem`
+   - Названия файлов должны соответсвовать примеру
+4. Сделать файл project_development.sh исполняемым, командой `chmod +x project_development.sh`
+5. Запустить скрипт командой `./project_development.sh`
+6. Проверить запуск приложения командой `sudo kubectl get pods`
 
 ## API документация
 

@@ -94,16 +94,16 @@ class BaseUserView(MethodView):
         )
 
 
-class UserView(BaseUserView):
+class GetUserView(BaseUserView):
     """
-    Класс для получения, обновления и удаления пользователя
+    Класс для получения информации о пользователе
     """
 
     @with_session
     @jwt_required()
     def get(self, session_db: Session) -> UserBase | HttpError:
         """
-        Получение пользователя по id
+        Получение информации о пользователе по id из JWT токена
 
         :param session_db: сессия базы данных
         :return: UserBase | HttpError
@@ -132,6 +132,12 @@ class UserView(BaseUserView):
                 f"Ошибка при получении пользователя c id: {user_id}: {e}"
             )
             self.handle_error(HttpError, "Internal server error", 500)
+
+
+class UpdateDeleteUserView(BaseUserView):
+    """
+    Класс для обновления и удаления пользователя
+    """
 
     @with_session
     @jwt_required()
@@ -280,14 +286,18 @@ class LogoutUserResource(BaseUserView):
 
 
 user_blueprint.add_url_rule(
-    "/<int:user_id>",
-    view_func=UserView.as_view("user")
+    "/user/",
+    view_func=GetUserView.as_view("get_user")
+)
+user_blueprint.add_url_rule(
+    "/user/<int:user_id>",
+    view_func=UpdateDeleteUserView.as_view("user")
 )
 user_blueprint.add_url_rule(
     "/",
     view_func=GetUsersListResource.as_view("get_users_list")
 )
 user_blueprint.add_url_rule(
-    "/logout/",
+    "/user/logout/",
     view_func=LogoutUserResource.as_view("logout")
 )

@@ -1,3 +1,4 @@
+from re import M
 import requests
 import uuid
 
@@ -107,13 +108,13 @@ class YandexAuthorize(BaseAuthView):
             }
         }
 
-        response_data = {
-            "access_token": f"Bearer {access_token}",
-            "refresh_token": f"Bearer {refresh_token}",
+        response = make_response({
             "user": user_data
-        }
+        }, 200)
 
-        response = make_response(response_data, 200)
+        response.headers["Authorization"] = access_token
+        response.headers["Refresh-Token"] = refresh_token
+
         set_access_cookies(
             response,
             access_token,
@@ -128,7 +129,7 @@ class YandexAuthorize(BaseAuthView):
             f"Аутентификация для {user.username} c помощью Yandex завершена, отправка ответа в браузер"
         )
 
-        return jsonify(response_data), 200
+        return response
 
 
 class YandexAuthLink(MethodView):
@@ -238,9 +239,10 @@ class YandexDeviceCheck(BaseAuthView):
         logger.info("Авторизация через устройство успешно подтверждена")
         delete_device_login_record(session_db, login_record)
 
-        return jsonify({
-            "access_token": f"Bearer {self._access_token(user)}",
-            "refresh_token": f"Bearer {self._refresh_token(user)}",
+        access_token = self._access_token(user)
+        refresh_token = self._refresh_token(user)
+
+        response = make_response({
             "status": "authenticated",
             "user": {
                 "id": user.id,
@@ -251,7 +253,23 @@ class YandexDeviceCheck(BaseAuthView):
                     "gold": user.currencies.gold
                 }
             }
-        }), 200
+        }, 200)
+
+        response.headers["Authorization"] = access_token
+        response.headers["Refresh-Token"] = refresh_token
+
+        set_access_cookies(
+            response,
+            access_token,
+            max_age=60 * 60 * 24
+        )
+        set_refresh_cookies(
+            response,
+            refresh_token,
+            max_age=60 * 60 * 24 * 7
+        )
+
+        return response
 
 
 auth_blueprint.add_url_rule(

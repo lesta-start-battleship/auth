@@ -15,6 +15,13 @@ execute_command "chmod +x k3s-docker-build.sh"
 # Сборка Docker-образа
 execute_command "./k3s-docker-build.sh auth-service:latest"
 
+# Сохрание значений JWT_PUBLIC_KEY и JWT_PRIVATE_KEY в группу секретов
+execute_command "sudo kubectl create secret generic secret-key --from-file=JWT_PUBLIC_KEY=/etc/ssl/certs/jwt_public_key.pem --from-file=JWT_PRIVATE_KEY=/etc/ssl/private/jwt_private_key.pem"
+
+
+# Применение PERSISTENT VOLUME
+execute_command "sudo kubectl apply -f postgres-pv.yaml"
+
 # Применение секретов
 execute_command "sudo kubectl apply -f secret_kuber.yaml"
 

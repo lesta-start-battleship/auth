@@ -69,28 +69,28 @@ class GoogleAuthorize(BaseAuthView):
             }
         }
 
-        response_data = {
-            "access_token": f"Bearer {access_token}",
-            "refresh_token": f"Bearer {refresh_token}",
+        response = make_response({
             "user": user_data
-        }
+        }, 200)
 
-        response = make_response(response_data, 200)
+        response.headers["Authorization"] = access_token
+        response.headers["Refresh-Token"] = refresh_token
+
         set_access_cookies(
             response,
-            f"Bearer {access_token}",
+            access_token,
             max_age=60 * 60 * 24
         )
         set_refresh_cookies(
             response,
-            f"Bearer {refresh_token}",
+            refresh_token,
             max_age=60 * 60 * 24 * 7
         )
         logger.info(
             f"Аутентификация для {user.username} c помощью Google завершена, отправка ответа в браузер"
         )
 
-        return jsonify(response_data), 200
+        return response
 
 
 class GoogleAuthLink(MethodView):
@@ -168,10 +168,10 @@ class GoogleDeviceCheck(BaseAuthView):
         logger.info("Авторизация через устройство успешно подтверждена")
         delete_device_login_record(session_db, login_record)
 
-        return jsonify({
-            "access_token": f"Bearer {self._access_token(user)}",
-            "refresh_token": f"Bearer {self._refresh_token(user)}",
-            "status": "authenticated",
+        access_token = self._access_token(user)
+        refresh_token = self._refresh_token(user)
+
+        response = make_response({
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -181,7 +181,23 @@ class GoogleDeviceCheck(BaseAuthView):
                     "gold": user.currencies.gold
                 }
             }
-        }), 200
+        }, 200)
+
+        response.headers["Authorization"] = access_token
+        response.headers["Refresh-Token"] = refresh_token
+
+        set_access_cookies(
+            response,
+            access_token,
+            max_age=60 * 60 * 24
+        )
+        set_refresh_cookies(
+            response,
+            refresh_token,
+            max_age=60 * 60 * 24 * 7
+        )
+
+        return response
 
 
 auth_blueprint.add_url_rule(

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.13] - (2025-07-15)
+
+### Feat
+
+- feat(app): Change of logic of verification during registration and authorization, change of endpoints for users
+
+    - The logic for checking user uniqueness has been changed; checking is performed both by email and by username. Error messages have been changed.
+    - Changed the response after email confirmation by code and authorization. Now user information is transmitted in the response body, and JWT tokens are transmitted in the headers
+    - Added separation in endpoints when working with user information
+
 ## [1.1.12] - (2025-07-10)
 
 ### Fix

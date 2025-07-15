@@ -40,7 +40,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: "User already exists"
+                error: "This email is already taken"
         500:
           description: Ошибка сервера
           content:
@@ -64,6 +64,15 @@ paths:
       responses:
         200:
           description: Успешная авторизация
+          headers:
+            Authorization:
+              description: Access токен
+              type: string
+              example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+            Refresh-Token:
+              description: Refresh токен
+              type: string
+              example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssadd"
           content:
             application/json:
               schema:
@@ -256,17 +265,20 @@ paths:
       description: При запросе необходимо передать refresh токен в заголовке Authorization "Bearer <token>"
       security:
         - jwt: []
-      headers:
-        Authorization:
+      parameters:
+        - name: Authorization
+          in: header
           required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefreshTokenRequest'
-
+          schema:
+            $ref: '#/components/schemas/RefreshTokenRequest'
       responses:
         200:
           description: Успешное обновление access токена
+          headers:
+            Authorization:
+              description: Access токен
+              type: string
+              example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
           content:
             application/json:
               schema:
@@ -311,6 +323,15 @@ paths:
       responses:
         200:
           description: Успешное подтверждение email
+          headers:
+            Authorization:
+              description: Access токен
+              type: string
+              example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+            Refresh-Token:
+              description: Refresh токен
+              type: string
+              example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
           content:
             application/json:
               schema:
@@ -348,7 +369,7 @@ paths:
               example:
                 error: "Internal server error"
 
-  /api/v1/users/:
+  /api/v1/users/user/:
     get:
       tags:
         - User
@@ -394,6 +415,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: "Internal server error"
+
+  /api/v1/users/user/{user_id}/:
     patch:
       tags:
         - User
@@ -510,7 +533,7 @@ paths:
               example:
                 error: "Internal server error"
 
-  /api/v1/users/logout/:
+  /api/v1/users/user/logout/:
     post:
       tags:
         - User
@@ -852,15 +875,9 @@ components:
     GoogleDeviceCheckResponseSuccess:
       type: object
       required:
-        - access_token
-        - refresh_token
         - status
         - user
       properties:
-        access_token:
-          type: string
-        refresh_token:
-          type: string
         status:
           type: string
           example: "authenticated"
@@ -901,19 +918,33 @@ components:
     UserLoginResponse:
       type: object
       properties:
-        access_token:
+        message:
           type: string
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-        refresh_token:
-          type: string
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Authorization completed successfully"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            email:
+              type: string
+            currencies:
+              type: object
+              properties:
+                guild_rage:
+                  type: integer
+                gold:
+                  type: integer
 
     ConfirmEmailResponse:
       type: object
       properties:
-        schema:
-          $ref: '#/components/schemas/UserLoginResponse'
-        user_id:
+        message:
+          type: string
+          example: "Email confirmed successfully"
+        id:
           type: integer
           example: 1
         username:
@@ -952,9 +983,9 @@ components:
     RefreshTokenResponse:
       type: object
       properties:
-        access_token:
+        message:
           type: string
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          example: "Refresh token completed successfully"
 
     GetUserResponse:
       type: object

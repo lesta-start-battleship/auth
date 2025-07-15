@@ -1,13 +1,17 @@
-from flask import make_response, request, Blueprint, jsonify
+from flask import make_response, request, Blueprint, jsonify, Response
 from flask.views import MethodView
-from typing import Dict
 from config import logger
 from errors import HttpError
 from decorators import with_session
 from signals import registration_user_signal
 from extensions import confirm_code_redis
 
-from authorization.services import get_user_by_username, create_user
+from authorization.services import (
+    get_user_by_username,
+    create_user,
+    get_user_by_email,
+    create_response
+)
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -18,7 +22,7 @@ from werkzeug.security import check_password_hash
 
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
-    set_access_cookies, set_refresh_cookies, get_jwt_identity,
+    set_access_cookies, get_jwt_identity,
     jwt_required, get_jwt
 )
 
@@ -105,19 +109,22 @@ class RegistrationView(BaseAuthView):
     """
 
     @with_session
-    def post(self, session_db: Session) -> Dict[str, str] | HttpError:
+    def post(self, session_db: Session) -> Response | HttpError:
         """
         Регистрация нового пользователя
 
         :param user_data: данные пользователя в формате json
-        :return: Dict[access_token: str, refresh_token: str] | HttpError
+        :return: Response | HttpError
         """
         validate_data = validate_schema(UserRegRequest, **request.json)
 
         if isinstance(validate_data, UserRegRequest):
 
+            if get_user_by_email(session_db, validate_data.email):
+                self.handle_error(HttpError, "This email is already taken", 409)
+
             if get_user_by_username(session_db, validate_data.username):
-                self.handle_error(HttpError, "User already exists", 409)
+                self.handle_error(HttpError, "This username is already taken", 409)
 
             try:
                 new_user = create_user(session_db, validate_data.model_dump())
@@ -134,7 +141,7 @@ class RegistrationView(BaseAuthView):
 
             except SQLAlchemyError as e:
                 logger.error(
-                    "Ошибка при регистрации пользователя"
+                    "Ошибка при регистрации пользователя "
                     "с данными: "
                     f"{validate_data.model_dump(exclude={'password'})}: {e}"
                 )
@@ -153,12 +160,12 @@ class LoginView(BaseAuthView):
     """
 
     @with_session
-    def post(self, session_db: Session) -> Dict[str, str] | HttpError:
+    def post(self, session_db: Session) -> Response | HttpError:
         """
         Вход пользователя
 
         :param user_data: username и password
-        :return: Dict[access_token: str, refresh_token: str] | HttpError
+        :return: Response | HttpError
         """
         validate_data = validate_schema(UserLoginRequest, **request.json)
 
@@ -184,23 +191,13 @@ class LoginView(BaseAuthView):
                 access_token = self._access_token(user)
                 refresh_token = self._refresh_token(user)
 
-                response = make_response({
-                    "access_token": f"Bearer {access_token}",
-                    "refresh_token": f"Bearer {refresh_token}"
-                }, 200)
-
-                set_access_cookies(
-                    response,
-                    f"Bearer {access_token}",
-                    max_age=60*60*24
+                return create_response(
+                    user,
+                    access_token,
+                    refresh_token,
+                    "Authorization completed successfully",
+                    200
                 )
-                set_refresh_cookies(
-                    response,
-                    f"Bearer {refresh_token}",
-                    max_age=60*60*24*7
-                )
-
-                return response
 
             except SQLAlchemyError as e:
                 logger.error(
@@ -219,12 +216,12 @@ class LoginView(BaseAuthView):
 class RefreshView(BaseAuthView):
 
     @jwt_required(refresh=True)
-    def post(self) -> Dict[str, str] | HttpError:
+    def post(self) -> Response | HttpError:
         """
         Обновление access токена
 
         :param: refresh_token из cookies или заголовка
-        :return: Dict[access_token: str] | HttpError
+        :return: Response | HttpError
         """
         validate_data = validate_schema(RefreshTokenRequest, **request.json)
 
@@ -240,13 +237,16 @@ class RefreshView(BaseAuthView):
                     }
                 )
 
-                response = make_response({
-                    "access_token": f"Bearer {access_token}"
-                }, 200)
+                response = make_response(
+                    "Refresh token completed successfully",
+                    200
+                )
+
+                response.headers["Authorization"] = access_token
 
                 set_access_cookies(
                     response,
-                    f"Bearer {access_token}",
+                    access_token,
                     max_age=60*60*24
                 )
 
@@ -267,13 +267,13 @@ class ConfirmEmailView(BaseAuthView):
     """
 
     @with_session
-    def get(self, code: str, session_db: Session) -> Dict[str, str] | HttpError:
+    def get(self, code: str, session_db: Session) -> Response | HttpError:
         """
         Подтверждение email
 
         :param code: код подтверждения
         :param session_db: сессия базы данных
-        :return: Dict[str, str] | HttpError
+        :return: Response | HttpError
         """
 
         username = confirm_code_redis.get(code)
@@ -296,30 +296,13 @@ class ConfirmEmailView(BaseAuthView):
             access_token = self._access_token(user)
             refresh_token = self._refresh_token(user)
 
-            response = make_response({
-                "access_token": f"Bearer {access_token}",
-                "refresh_token": f"Bearer {refresh_token}",
-                "user_id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "currencies": {
-                    "guild_rage": user.currencies.guild_rage,
-                    "gold": user.currencies.gold
-                }
-                }, 200)
-
-            set_access_cookies(
-                response,
-                f"Bearer {access_token}",
-                max_age=60*60*24
+            return create_response(
+                user,
+                access_token,
+                refresh_token,
+                "Email confirmed successfully",
+                200
             )
-            set_refresh_cookies(
-                response,
-                f"Bearer {refresh_token}",
-                max_age=60*60*24*7
-            )
-
-            return response
 
         except SQLAlchemyError as e:
             logger.error(
@@ -341,7 +324,6 @@ auth_blueprint.add_url_rule(
     "/refresh_token/",
     view_func=RefreshView.as_view("refresh")
 )
-
 auth_blueprint.add_url_rule(
     "/confirm_email/<string:code>",
     view_func=ConfirmEmailView.as_view("confirm_email")
