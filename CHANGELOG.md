@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.1.12] - (2025-07-10)
+
+### Fix
+
+- fix(app): Correction of logic of providing access to the admin panel
+
+
 ## [1.1.11] - (2025-07-10)
 
 ### Fix

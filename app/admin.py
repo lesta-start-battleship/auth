@@ -2,6 +2,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_jwt_extended import jwt_required, get_jwt
 from database.models import Role
+from flask import jsonify
 
 
 admin = Admin(name="Auth admin panel", template_mode="bootstrap4")
@@ -11,7 +12,10 @@ class CustomModelView(ModelView):
     @jwt_required("cookies")
     def is_accessible(self):
         claims = get_jwt()
-        return claims["role"] == Role.ADMINISTRATOR.value
+
+        if claims["role"] == Role.ADMINISTRATOR.value:
+            return True
+        return jsonify({"message": "Access denied"}), 403
 
 
 class UserBaseAdminView(CustomModelView):
